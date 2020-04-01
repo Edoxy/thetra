@@ -39,6 +39,8 @@
 		</Compiler>
 		<Unit filename="../classes/ConfigFile.cpp" />
 		<Unit filename="../classes/ConfigFile.hpp" />
+		<Unit filename="../classes/Cutter3D.cpp" />
+		<Unit filename="../classes/Cutter3D.hpp" />
 		<Unit filename="../classes/DefineNumbers.hpp" />
 		<Unit filename="../classes/Domain3D.cpp" />
 		<Unit filename="../classes/Domain3D.hpp" />
@@ -470,6 +472,12 @@
 		<Unit filename="../classes/GenericDomain.hpp" />
 		<Unit filename="../classes/GenericMesh.cpp" />
 		<Unit filename="../classes/GenericMesh.hpp" />
+		<Unit filename="../classes/Intersector1D1D.cpp" />
+		<Unit filename="../classes/Intersector1D1D.hpp" />
+		<Unit filename="../classes/Intersector2D1D.cpp" />
+		<Unit filename="../classes/Intersector2D1D.hpp" />
+		<Unit filename="../classes/Intersector2D2D.cpp" />
+		<Unit filename="../classes/Intersector2D2D.hpp" />
 		<Unit filename="../classes/MacroDefinitions.hpp" />
 		<Unit filename="../classes/MeshImport_Tetgen.cpp" />
 		<Unit filename="../classes/MeshImport_Tetgen.hpp" />
@@ -481,9 +489,6 @@
 		<Unit filename="../classes/tetgen.cxx" />
 		<Unit filename="../classes/tetgen.h" />
 		<Unit filename="main.cpp" />
-		<Extensions>
-			<code_completion />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

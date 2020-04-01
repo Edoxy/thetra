@@ -160,10 +160,7 @@ namespace GeDiM
 			tetgenPolygon->vertexlist = new int[tetgenPolygon->numberofvertices];
 
 			for (unsigned int v = 0; v < numberFacePoints; v++)
-			{
-				unsigned int vertexList = idPoints[v] + numberOfVertices;
-				tetgenPolygon->vertexlist[v] = idPoints[v] + numberOfVertices;
-			}
+                tetgenPolygon->vertexlist[v] = idPoints[v] + numberOfVertices;
 
 			face_markerlist[numFac + numberOfFaces] = 2;
 		}

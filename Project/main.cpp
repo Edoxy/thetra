@@ -3,6 +3,7 @@
 #include "Domain3D.hpp"
 #include "MeshImport_Tetgen.hpp"
 #include "RefinerTetra.hpp"
+#include "Cutter3D.hpp"
 #include <iostream>
 
 using namespace GeDiM;
@@ -24,7 +25,6 @@ int main(int argc, char** argv)
     meshImportTetgen.CreateTetgenInput(domain);
     meshImportTetgen.CreateTetgenOutput(domain);
     meshImportTetgen.CreateMesh(domain, mesh);
-
 
 	/// REFINE MESH
 	unsigned int numCellToRefiner = 10;

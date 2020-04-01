@@ -2605,8 +2605,6 @@ namespace GeDiM
 		AddFace(&faceChild);
 
 		newIdPoint.reserve(numEdgesFaceChild-1);
-		unsigned int idPoint = pointsIdCutEdge[0];
-		unsigned int idPointNext = pointsIdCutEdge[1];
 		//CICLO SUI LATI DELLA FACCIA
 		for(unsigned int numEd = 0; numEd < numberEdges; numEd++)
 		{
