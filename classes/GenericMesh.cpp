@@ -551,12 +551,12 @@ namespace GeDiM
 			}
 			else if(prodScalar < -1.0 + rotationTolerance)
 			{
-				angleBetweenVectors = M_PIf64;
+				angleBetweenVectors = PI_GRECO;
 				W.col(i - 1) << -normVectorI, 0.0, 0.0;
 			}
 			else if((prodScalar > -rotationTolerance) && (prodScalar < rotationTolerance))
 			{
-				angleBetweenVectors = M_PIf64 * 0.5;
+				angleBetweenVectors = PI_GRECO * 0.5;
 				W.col(i - 1) << 0.0, normVectorI, 0.0;
 			}
 			else
@@ -832,7 +832,7 @@ namespace GeDiM
 			}
 			else
 			{
-				angleBetweenVectors = M_PIf64;
+				angleBetweenVectors = PI_GRECO;
 			}
 
 			W.col(i - 1) << normVectorI * cos(angleBetweenVectors), normVectorI * sin(angleBetweenVectors), 0;
