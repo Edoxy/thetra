@@ -102,7 +102,7 @@ namespace GeDiM
 			CutterMesh3D();
 			virtual ~CutterMesh3D();
 
-			void SetToleranceParallelism(const double& toll) {intersector2D1D->SetToleranceIntersection(toll);}
+			void SetToleranceParallelism(const double& toll) {intersector2D1D->SetToleranceParallelism(toll);}
 			void SetToleranceIntersection(const double& toll) {intersector2D1D->SetToleranceIntersection(toll);}
 			const double& ToleranceParellism() const { return intersector2D1D->ToleranceIntersection();}
 			const double& ToleranceIntersection() const { return intersector2D1D->ToleranceIntersection();}
