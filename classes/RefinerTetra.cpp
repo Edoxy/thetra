@@ -7,6 +7,7 @@ namespace GeDiM
 {
     RefinerTetra::RefinerTetra()
     {
+
     }
     RefinerTetra::~RefinerTetra()
     {
@@ -17,11 +18,6 @@ namespace GeDiM
 		idCellToRefine.push_back(idCell);
 		return Output::Success;
 	}
-
-    const Output::ExitCodes RefinerTetra::RefineMesh()
-    {
-
-    }
 
     const GenericEdge* RefinerTetra::FindMaxEdge(GenericCell& cell)
     {
@@ -48,8 +44,9 @@ namespace GeDiM
         if(cell.IsActive())
         {
             const GenericEdge* edge_to_split = this -> FindMaxEdge(cell);
-            
+
         }
+        return Output::Success;
     }
 
     const Output::ExitCodes RefinerTetra::RecoverConformity()

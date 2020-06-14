@@ -17,8 +17,8 @@ namespace GeDiM
             list<unsigned int> idFacesCut;
 
             const Output::ExitCodes FindMaxFace(GenericCell& cell) {}
-            const Output::ExitCodes CutTetra(GenericCell& cell) {}
-            const Output::ExitCodes RecoverConformity() {}
+            const Output::ExitCodes CutTetra(GenericCell& cell);
+            const Output::ExitCodes RecoverConformity();
             const GenericEdge* FindMaxEdge(GenericCell& cell);
 
 
