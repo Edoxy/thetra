@@ -62,7 +62,7 @@ namespace GeDiM
 				ToBreak = 3
 			};
 
-			Intersector2D1D* intersector2D1D;
+			//Intersector2D1D* intersector2D1D;
 
 			vector<PositionInRelationToSurface> valuePoints;
 			map<unsigned int, unsigned int> idPositionPoints;
@@ -99,6 +99,7 @@ namespace GeDiM
 
 
 		public:
+			Intersector2D1D* intersector2D1D;
 			CutterMesh3D();
 			virtual ~CutterMesh3D();
 

@@ -29,7 +29,7 @@ namespace GeDiM
             void SetMesh(GenericMesh& mesh) {meshPointer = &mesh;}
             const Output::ExitCodes InitializeIdCells(const unsigned int& numberOfCells) { idCellToRefine.reserve(numberOfCells); return Output::Success;}
             const Output::ExitCodes	AddIdCell(const unsigned int& idCell);
-            const Output::ExitCodes RefineMesh(){}
+            const Output::ExitCodes RefineMesh();
     };
 }
 
