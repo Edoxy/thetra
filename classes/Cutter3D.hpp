@@ -112,6 +112,7 @@ namespace GeDiM
 			const Output::ExitCodes Reset();
 
 			const Output::ExitCodes CutMesh();
+			const Output::ExitCodes CutCellTetra(GenericCell& cell, const Vector3d& normalPlane, const double& translation, const double& toll);
 	};
 }
 

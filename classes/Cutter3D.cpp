@@ -1296,5 +1296,444 @@ namespace GeDiM
 		}
 		return Output::Success;
 	}
+	const Output::ExitCodes CutterMesh3D::CutCellTetra(GenericCell& cell, const Vector3d& normalPlane, const double& translation, const double& toll)
+	{
+		Reset();
+
+		valuePoints.resize(4);
+		for(unsigned int i = 0; i < 4; i++)
+		{
+			unsigned int positionOfPoint = PointDomainSplitter(*cell.Point(i), normalPlane, translation);
+
+			idPositionPoints.insert(pair<unsigned int, unsigned int>(cell.Point(i)->Id(), i));
+			switch(positionOfPoint)
+			{
+				case Positive:
+				{
+					positivePoints.insert(cell.Point(i)->Id());
+					valuePoints[i] = PositionInRelationToSurface::Positive;
+					break;
+				}
+				case Negative:
+				{
+					negativePoints.insert(cell.Point(i)->Id());
+					valuePoints[i] = PositionInRelationToSurface::Negative;
+					break;
+				}
+				case Plane:
+				{
+					planePoints.insert(cell.Point(i)->Id());
+					valuePoints[i] = PositionInRelationToSurface::Plane;
+					break;
+				}
+				default:
+					return Output::GenericError;
+			}
+		}//pointsSplitted
+
+		for(unsigned int i = 0; i < 6; i++)
+		{
+			const unsigned int& idEdge = cell.Edge(i)->Id();
+			GenericEdge& edge = *mesh->Edge(idEdge);
+			CutterMesh3D::PositionInRelationToSurface positionOfEdge = EdgeDomainSplitter(edge);
+			switch(positionOfEdge)
+			{
+				case Positive:
+				{
+					positiveEdges.insert(idEdge);
+					break;
+				}
+				case Negative:
+				{
+					negativeEdges.insert(idEdge);
+					break;
+				}
+				case ToBreak:
+				{
+
+					unsigned int idNewPoint;
+					if(edge.IsActive())
+					{
+						CutEdge(edge, idNewPoint);
+						planePoints.insert(idNewPoint);
+					}
+					else
+					{
+						const GenericEdge& childZero = static_cast<const GenericEdge&>(*edge.Child(0));
+						const GenericEdge& childOne = static_cast<const GenericEdge&>(*edge.Child(1));
+						//TROVARE ID PUNTO DI TAGLIO DEL LATO
+
+						if(childZero.Point(0) != edge.Point(0) && childZero.Point(0) != edge.Point(1))
+							idNewPoint = childZero.Point(0)->Id();
+						else
+							idNewPoint = childZero.Point(1)->Id();
+
+						const GenericPoint* firstPoint = edge.Point(0);
+						if((positivePoints.find(firstPoint->Id()) != positivePoints.end() ))
+						{
+							if(childZero.Point(0) == firstPoint || childZero.Point(1) == firstPoint)
+							{
+								positiveEdges.insert(childZero.Id());
+								negativeEdges.insert(childOne.Id());
+							}
+							else
+							{
+								positiveEdges.insert(childOne.Id());
+								negativeEdges.insert(childZero.Id());
+							}
+						}
+						else
+						{
+							if(childZero.Point(0) == firstPoint || childZero.Point(1) == firstPoint)
+							{
+								positiveEdges.insert(childOne.Id());
+								negativeEdges.insert(childZero.Id());
+							}
+							else
+							{
+								positiveEdges.insert(childZero.Id());
+								negativeEdges.insert(childOne.Id());
+							}
+						}
+					}
+					break;
+				}
+				case Plane:
+				{
+					planeEdges.insert(idEdge);
+					break;
+				}
+				default:
+					return Output::GenericError;
+			}
+		} //EdgesSplitted
+
+		valueEdges.resize(planeEdges.size() + negativeEdges.size() + positiveEdges.size());
+		unsigned int positionEdge = 0;
+		for(set<unsigned int>::iterator it = positiveEdges.begin(); it != positiveEdges.end(); it++)
+		{
+			valueEdges[positionEdge] = PositionInRelationToSurface::Positive;
+			idPositionEdges.insert(pair<unsigned int, unsigned int>(*it, positionEdge++));
+		}
+		for(set<unsigned int>::iterator it = negativeEdges.begin(); it != negativeEdges.end(); it++)
+		{
+			valueEdges[positionEdge] = PositionInRelationToSurface::Negative;
+			idPositionEdges.insert(pair<unsigned int, unsigned int>(*it, positionEdge++));
+		}
+		for(set<unsigned int>::iterator it = planeEdges.begin(); it != planeEdges.end(); it++)
+		{
+			valueEdges[positionEdge] = PositionInRelationToSurface::Plane;
+			idPositionEdges.insert(pair<unsigned int, unsigned int>(*it, positionEdge++));
+		}
+
+		unsigned int counterCutFace = 0;
+		for(unsigned int numFace = 0; numFace < 4; numFace++)
+		{
+			vector<const GenericPoint*> domainPointsInFace;
+			unsigned int idFace = cell.Face(numFace)->Id();
+			GenericFace& faceToCut = *mesh->Face(idFace);
+			if(FaceDomainSplitter2(faceToCut, domainPointsInFace))
+			{
+				CutFace(faceToCut, domainPointsInFace);
+				counterCutFace++;
+			}
+			for(unsigned int cel = 0; cel < faceToCut.NumberOfCells(); cel++)
+			{
+				if( faceToCut.Cell(cel) != NULL)
+				{
+					const unsigned int& idCell = faceToCut.Cell(cel)->Id();
+					if(idCell != cell.Id())
+						idCellsToUpdate.insert(idCell);
+				}
+			}
+		}//FacesSplitted
+
+		if(counterCutFace != 2)
+		{
+			Output::PrintErrorMessage("Number cut not equal to 2. Number Cuts %d", false, counterCutFace);
+			return Output::GenericError;
+		}
+
+		if(planePoints.size() != planeEdges.size())
+		{
+			Output::PrintErrorMessage("Number plane points %d not equal to number plane edges %d", false, planePoints.size(), planeEdges.size());
+			return Output::GenericError;
+		}
+
+		if(!planeEdges.empty())
+		{
+			if(planeFaces.empty())
+			{
+				GenericFace& newFace = *(mesh->CreateFace());
+				mesh->AddFace(&newFace);
+				planeFaces.push_back(newFace.Id());
+
+				newFace.InitializeEdges(planeEdges.size());
+
+				for(set<unsigned int>::iterator it = planeEdges.begin(); it != planeEdges.end(); ++it)
+				{
+					GenericEdge& edge = *mesh->Edge(*it);
+					newFace.AddEdge(&edge);
+					edge.AddFace(&newFace);
+					edge.ShrinkFaces();
+				}
+
+				//Adding points to newFace
+				unsigned int numberPointNewFace = newFace.NumberOfEdges();
+				newFace.InitializePoints(numberPointNewFace);
+				newFace.AddPoint(newFace.Edge(0)->Point(0));
+				newFace.AddPoint(newFace.Edge(0)->Point(1));
+				unsigned int previousId = newFace.Edge(0)->Point(1)->Id();
+				unsigned int j = 1;
+				unsigned int i;
+
+				while(newFace.NumberOfPoints() < newFace.NumberOfEdges() && j < newFace.NumberOfEdges())
+				{
+					i = j;
+					while(i < newFace.NumberOfEdges())
+					{
+						if(newFace.Edge(i)->Point(0)->Id() ==  previousId)
+						{
+							newFace.AddPoint(newFace.Edge(i)->Point(1));
+							previousId = newFace.Edge(i)->Point(1)->Id();
+
+							const GenericEdge * tmpEdge = newFace.Edge(i);
+							newFace.InsertEdge(newFace.Edge(j), i);
+							newFace.InsertEdge(tmpEdge, j);
+							break;
+						}
+						else if(newFace.Edge(i)->Point(1)->Id() ==  previousId)
+						{
+							newFace.AddPoint(newFace.Edge(i)->Point(0));
+							previousId = newFace.Edge(i)->Point(0)->Id();
+
+							const GenericEdge * tmpEdge = newFace.Edge(i);
+							newFace.InsertEdge(newFace.Edge(j), i);
+							newFace.InsertEdge(tmpEdge, j);
+							break;
+						}
+						i++;
+					}
+					j++;
+				}
+
+				//checking if the orientation of the points of the face is positive with regard to the normal to the domain
+
+				newFace.ComputeNormal();
+				Vector3d& normalFaceNewFace = newFace.Normal();
+				const unsigned int& numEdgesNewFace = newFace.NumberOfEdges();
+				if(normalFaceNewFace.dot(normalPlane) < - toll)	//the orientation is negative, therfore the vector of the points of the face is reversed
+				{
+					unsigned int numberPoints = numberPointNewFace;
+					unsigned int forIteration =  ((numberPoints - 1) * 0.5);
+					for(unsigned int i = 0; i < forIteration ; i++)
+					{
+						const GenericPoint* tmpPoint = newFace.Point(i + 1);
+						newFace.InsertPoint(newFace.Point(numberPoints - i - 1), i + 1);
+						newFace.InsertPoint(tmpPoint, numberPoints - i - 1);
+					}
+					for(unsigned int i = 0; i <= forIteration; i++)
+					{
+						const GenericEdge* tempEdge = newFace.Edge(i);
+						newFace.InsertEdge(newFace.Edge(numberPoints - i - 1), i);
+						newFace.InsertEdge(tempEdge, numberPoints - i - 1);
+					}
+					normalFaceNewFace *= -1.0;
+				}
+
+				for(unsigned int k = 0; k < numEdgesNewFace; k++)
+				{
+					const GenericPoint* tmpPoint = newFace.Point(k);
+					const GenericPoint* tmpPointNext = newFace.Point((k + 1)%numEdgesNewFace);
+					const GenericEdge* tempEdge = newFace.Edge(k);
+					const GenericPoint* tmpPointEd = tempEdge->Point(0);
+					const GenericPoint* tmpPointEdNext = tempEdge->Point(1);
+					if((tmpPoint == tmpPointEd && tmpPointNext == tmpPointEdNext) ||
+						 (tmpPoint == tmpPointEdNext && tmpPointNext == tmpPointEd))
+						continue;
+					else
+					{
+						for(unsigned int ed = k; ed < numEdgesNewFace; ed++)
+						{
+							const GenericEdge* tempEdge2 = newFace.Edge(ed);
+							const GenericPoint* tmpPointEd = tempEdge2->Point(0);
+							const GenericPoint* tmpPointEdNext = tempEdge2->Point(1);
+							if((tmpPoint == tmpPointEd && tmpPointNext == tmpPointEdNext) ||
+								 (tmpPoint == tmpPointEdNext && tmpPointNext == tmpPointEd))
+							{
+								newFace.InsertEdge(tempEdge2, k);
+								newFace.InsertEdge(tempEdge, ed);
+							}
+							else
+								continue;
+						}
+					}
+				}
+
+
+				if(newFace.NumberOfPoints() != newFace.NumberOfEdges())
+				{
+					Output::PrintErrorMessage("Errror in adding of the points in the face %d", false, newFace.Id());
+					return Output::GenericError;
+				}
+
+				for(set<unsigned int>::iterator it = planePoints.begin(); it != planePoints.end(); ++it )
+				{
+					GenericPoint& point = *mesh->Point(*it);
+					point.AddFace(&newFace);
+					point.ShrinkFaces();
+				}
+
+				cell.SetState(false);
+				cell.InitializeChilds(2);
+
+				//positive
+				unsigned int positionCell = 1;
+				GenericCell& newCell_1 = *(mesh->CreateCell());
+				mesh->AddCell(&newCell_1);
+				cell.AddChild(&newCell_1);
+
+				newCell_1.SetFather(&cell);
+				newCell_1.InitializeFaces(4);
+				newCell_1.AllocateCells(4);
+
+				//negative
+				GenericCell& newCell_2 = *(mesh->CreateCell());
+				mesh->AddCell(&newCell_2);
+				cell.AddChild(&newCell_2);
+				newCell_2.SetFather(&cell);
+
+				newCell_2.InitializeFaces(4);
+				newCell_2.AllocateCells(4);
+
+				newCell_2.AddFace(&newFace);
+				newCell_1.AddFace(&newFace);
+
+				newCell_1.InsertCell(&newCell_2, 0);
+				newCell_2.InsertCell(&newCell_1, 0);
+
+				for(list<unsigned int>::iterator it = positiveFaces.begin(); it != positiveFaces.end(); ++it )
+				{
+					GenericFace* face = mesh->Face(*it);
+					newCell_1.AddFace(face);
+					for(unsigned int numCell = 0; numCell < 2; numCell++)
+					{
+						if(face->Cell(numCell) != NULL)
+						{
+							if(face->Cell(numCell)->Id() == cell.Id() )
+								face->InsertCell(&newCell_1, numCell);
+							else
+								newCell_1.InsertCell(face->Cell(numCell), positionCell);
+						}
+					}
+					positionCell++;
+				}
+
+				newCell_1.InitializeEdges(positiveEdges.size() + planeEdges.size());
+				for(set<unsigned int>::iterator it = positiveEdges.begin(); it != positiveEdges.end(); ++it)
+				{
+					GenericEdge& edge = *mesh->Edge(*it);
+					newCell_1.AddEdge(&edge);
+					for(unsigned int numCell = 0; numCell < edge.NumberOfCells(); numCell++)
+					{
+						if(edge.Cell(numCell)->Id() == cell.Id())
+							edge.InsertCell(&newCell_1, numCell);
+					}
+				}
+
+				for(set<unsigned int>::iterator it = positivePoints.begin(); it != positivePoints.end(); ++it)
+				{
+					GenericPoint& point = *mesh->Point(*it);
+					newCell_1.AddPoint(&point);
+					for(unsigned int numCell = 0; numCell < point.NumberOfCells(); numCell++)
+					{
+						if(point.Cell(numCell)->Id() == cell.Id())
+							point.InsertCell(&newCell_1, numCell);
+					}
+				}
+
+				positionCell = 1;
+				for(list<unsigned int>::iterator it = negativeFaces.begin(); it != negativeFaces.end(); ++it )
+				{
+					GenericFace* face = mesh->Face(*it);
+					newCell_2.AddFace(face);
+					for(unsigned int numCell = 0; numCell < 2; numCell++)
+					{
+						if(face->Cell(numCell) != NULL)
+						{
+							if(face->Cell(numCell)->Id() == cell.Id() )
+								face->InsertCell(&newCell_2, numCell);
+							else
+								newCell_2.InsertCell(face->Cell(numCell), positionCell);
+						}
+					}
+					positionCell++;
+				}
+
+				newCell_2.InitializeEdges(negativeEdges.size() + planeEdges.size());
+				for(set<unsigned int>::iterator it = negativeEdges.begin(); it != negativeEdges.end(); ++it)
+				{
+					GenericEdge& edge = *mesh->Edge(*it);
+					newCell_2.AddEdge(&edge);
+					for(unsigned int numCell = 0; numCell < edge.NumberOfCells(); numCell++)
+					{
+						if(edge.Cell(numCell)->Id() == cell.Id())
+							edge.InsertCell(&newCell_2,numCell);
+					}
+				}
+
+				for(set<unsigned int>::iterator it = negativePoints.begin();it!=negativePoints.end(); ++it )
+				{
+					GenericPoint& point = *mesh->Point(*it);
+					newCell_2.AddPoint(&point);
+					for(unsigned int numCell = 0; numCell < point.NumberOfCells(); numCell++)
+					{
+						if(point.Cell(numCell)->Id() == cell.Id())
+							point.InsertCell(&newCell_2, numCell);
+					}
+				}
+
+				for(set<unsigned int>::iterator it = planeEdges.begin(); it != planeEdges.end(); ++it)
+				{
+					GenericEdge& edge = *mesh->Edge(*it);
+					newCell_2.AddEdge(&edge);
+					newCell_1.AddEdge(&edge);
+					edge.AddCell(&newCell_2);
+					edge.AddCell(&newCell_1);
+					edge.ShrinkCells();
+				}
+
+				for(set<unsigned int>::iterator it = planePoints.begin();it != planePoints.end(); ++it )
+				{
+					GenericPoint& point = *mesh->Point(*it);
+					newCell_2.AddPoint(&point);
+					newCell_1.AddPoint(&point);
+					point.AddCell(&newCell_2);
+					point.AddCell(&newCell_1);
+					point.ShrinkCells();
+				}
+
+				newFace.ComputeGeometricalProperties();
+				double inverseNumberPoints = 1.0/newCell_1.NumberOfPoints();
+				double planeTranslation = newFace.Normal().dot(newFace.Centroid());
+				Vector3d barycenter(0.0,0.0,0.0);
+				for(unsigned int numCellPnt = 0; numCellPnt < newCell_1.NumberOfPoints(); numCellPnt++)
+					barycenter += inverseNumberPoints * newCell_1.Point(numCellPnt)->Coordinates();
+
+				newFace.AllocateCells(2);
+				if((barycenter.dot(newFace.Normal()) - planeTranslation) > toll)
+				{
+					newFace.InsertCell(&newCell_2, 0);
+					newFace.InsertCell(&newCell_1, 1);
+				}
+				else
+				{
+					newFace.InsertCell(&newCell_1, 0);
+					newFace.InsertCell(&newCell_2, 1);
+				}
+			}
+		}
+		return Output::Success;
+	}
 }
 
