@@ -51,6 +51,7 @@ namespace GeDiM
 
 
             CutterMesh3D cutter;
+            cutter.SetMesh(*meshPointer);
             Vector3d a[2];
             int j = 0;
             for(int i = 0; i < cell.NumberOfPoints() ; i++)
