@@ -56,7 +56,7 @@ namespace GeDiM
             int j = 0;
             for(int i = 0; i < cell.NumberOfPoints() ; i++)
             {
-                const GenericPoint* current_point = meshPointer->Point(i);
+                const GenericPoint* current_point = cell.Point(i);
                 if(current_point != edge_to_split->Point(0) && current_point != edge_to_split->Point(1))
                 {
                     a[j] = current_point -> Coordinates() - point;
@@ -79,26 +79,31 @@ namespace GeDiM
                 }
             }
             cutter_plane->ComputeNormal();*/
+            Intersector2D1D& intersector = *cutter.intersector2D1D;
+			intersector.SetPlane(normal, translation);
+
             if(cutter.CutCellTetra(cell, normal, translation, 1.0E-7) == Output::Success)
             {
                 cout << "success" << endl;
             }
 
-            //cutter.CutCell();
+            RecoverConformity(cell);
         }
         return Output::Success;
     }
 
-    const Output::ExitCodes RefinerTetra::RecoverConformity()
+    const Output::ExitCodes RefinerTetra::RecoverConformity(GenericCell& cell, const Vector3d new_point, GenericEdge& long_edge)
     {
 
     }
 
     const Output::ExitCodes RefinerTetra::RefineMesh()
     {
+        cout << idCellToRefine << idCellToRefine.size() << endl;
+
         for(int i = 0; i < idCellToRefine.size(); i++)
         {
-            this -> CutTetra(*meshPointer -> Cell(idCellToRefine[i]));
+            CutTetra(*meshPointer -> Cell(idCellToRefine[i]));
 
 
 

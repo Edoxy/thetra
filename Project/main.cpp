@@ -20,14 +20,22 @@ int main(int argc, char** argv)
     domain.BuildParallelepiped(origin, length, height, width);
 
     MeshImport_Tetgen meshImportTetgen;
-    meshImportTetgen.SetMinimumNumberOfCells(100);
+    meshImportTetgen.SetMinimumNumberOfCells(1);
     GenericMesh mesh;
     meshImportTetgen.CreateTetgenInput(domain);
     meshImportTetgen.CreateTetgenOutput(domain);
     meshImportTetgen.CreateMesh(domain, mesh);
 
+    cout << mesh.NumberOfCells() << endl;
+    cout << mesh.NumberOfFaces() << endl;
+
+    for(int i = 0; i < mesh.NumberOfCells(); i++)
+    {
+        cout << mesh.Cell(i)->Id() << " ";
+    }
+
 	/// REFINE MESH
-	unsigned int numCellToRefiner = 10;
+	unsigned int numCellToRefiner = 3;
 	RefinerTetra refiner;
 	refiner.SetMesh(mesh);
 	refiner.InitializeIdCells(numCellToRefiner);
@@ -35,6 +43,10 @@ int main(int argc, char** argv)
         refiner.AddIdCell(numCell);
     refiner.RefineMesh();
 	/// OUTPUT MESH TO MATLAB SCRIPT FOR VISUALIZATION
+
+	cout << mesh.NumberOfCells() << endl;
+    cout << mesh.NumberOfFaces() << endl;
+
 	mesh.CleanInactiveTreeNode();
 	ofstream file("plotTetrahedralMesh.m", ofstream::out );
 	if(file.is_open())

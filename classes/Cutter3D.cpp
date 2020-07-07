@@ -116,6 +116,9 @@ namespace GeDiM
 	{
 		ostringstream key;
 		key << "TestDomain";
+		//aggiunta
+		face.ComputeNormal();
+		//
 		face.SetState(false);
 		face.InitializeChilds(2);
 
