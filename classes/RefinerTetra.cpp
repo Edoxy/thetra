@@ -67,18 +67,6 @@ namespace GeDiM
             normal.normalize();
             double translation = normal.dot(point);
             cutter.intersector2D1D = new Intersector2D1D;
-            //compute normal
-            /*GenericFace* cutter_plane = meshPointer -> CreateFace();
-            cutter_plane -> AddPoint(new_point);
-            for(int i = 0; i < cell.NumberOfPoints() ; i++)
-            {
-                const GenericPoint* current_point = meshPointer->Point(i);
-                if(current_point != edge_to_split->Point(0) && current_point != edge_to_split->Point(1))
-                {
-                    cutter_plane->AddPoint(current_point);
-                }
-            }
-            cutter_plane->ComputeNormal();*/
             Intersector2D1D& intersector = *cutter.intersector2D1D;
 			intersector.SetPlane(normal, translation);
 
@@ -87,13 +75,40 @@ namespace GeDiM
                 cout << "success" << endl;
             }
 
-            RecoverConformity(cell);
+            RecoverConformity(cell, point, *edge_to_split);
         }
         return Output::Success;
     }
 
-    const Output::ExitCodes RefinerTetra::RecoverConformity(GenericCell& cell, const Vector3d new_point, GenericEdge& long_edge)
+    const Output::ExitCodes RefinerTetra::RecoverConformity(GenericCell& cell, const Vector3d new_point, const GenericEdge& long_edge)
     {
+
+        CutterMesh3D cutter;
+        cutter.SetMesh(*meshPointer);
+        for(int i = 0; i < long_edge.NumberOfCells(); i++)
+        {
+            if (long_edge.Cell(i) != &cell)
+            {
+                Vector3d a[2];
+                int j = 0;
+                for(int i = 0; i < cell.NumberOfPoints() ; i++)
+                {
+                    const GenericPoint* current_point = cell.Point(i);
+                    if(current_point != long_edge.Point(0) && current_point != long_edge.Point(1))
+                    {
+                        a[j] = current_point -> Coordinates() - new_point;
+                        j++;
+                    }
+                }
+                Vector3d normal = a[0].cross(a[1]);
+                normal.normalize();
+                double translation = normal.dot(new_point);
+                cutter.intersector2D1D = new Intersector2D1D;
+                Intersector2D1D& intersector = *cutter.intersector2D1D;
+			    intersector.SetPlane(normal, translation);
+                cutter.CutCell(cell, normal, translation, 1.0E-7);
+            }
+        }
 
     }
 
@@ -104,9 +119,6 @@ namespace GeDiM
         for(int i = 0; i < idCellToRefine.size(); i++)
         {
             CutTetra(*meshPointer -> Cell(idCellToRefine[i]));
-
-
-
         }
         return Output::Success;
     }

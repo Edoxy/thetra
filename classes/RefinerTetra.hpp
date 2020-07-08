@@ -18,7 +18,7 @@ namespace GeDiM
 
             const Output::ExitCodes FindMaxFace(GenericCell& cell) {}
             const Output::ExitCodes CutTetra(GenericCell& cell);
-            const Output::ExitCodes RecoverConformity(GenericCell& cell, const Vector3d new_point, GenericEdge& long_edge);
+            const Output::ExitCodes RecoverConformity(GenericCell& cell, const Vector3d new_point, const GenericEdge& long_edge);
             const GenericEdge* FindMaxEdge(GenericCell& cell);
 
 

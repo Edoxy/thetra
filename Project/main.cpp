@@ -35,7 +35,7 @@ int main(int argc, char** argv)
     }
 
 	/// REFINE MESH
-	unsigned int numCellToRefiner = 3;
+	unsigned int numCellToRefiner = 1;
 	RefinerTetra refiner;
 	refiner.SetMesh(mesh);
 	refiner.InitializeIdCells(numCellToRefiner);
