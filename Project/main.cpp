@@ -29,12 +29,9 @@ int main(int argc, char** argv)
     cout << mesh.NumberOfCells() << endl;
     cout << mesh.NumberOfFaces() << endl;
 
-    for(int i = 0; i < mesh.NumberOfCells(); i++)
-    {
-        cout << mesh.Cell(i)->Id() << " ";
-    }
 
 	/// REFINE MESH
+
 	unsigned int numCellToRefiner = 1;
 	RefinerTetra refiner;
 	refiner.SetMesh(mesh);
