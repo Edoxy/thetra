@@ -2751,10 +2751,10 @@ namespace GeDiM
 			}
 		}
 
-		faceChild.SetCentroid(face.Centroid());
-		faceChild.SetMeasure(face.Measure());
-		faceChild.SetRotationMatrix(face.RotationMatrix());
-		faceChild.SetNormal(face.Normal());
+		//faceChild.SetCentroid(face.Centroid());
+		//faceChild.SetMeasure(face.Measure());
+		//faceChild.SetRotationMatrix(face.RotationMatrix());
+		//faceChild.SetNormal(face.Normal());
 
 //		unsigned int numEdgesNewFace = faceChild.NumberOfEdges();
 //		const Vector3d& normalFace = face.Normal();

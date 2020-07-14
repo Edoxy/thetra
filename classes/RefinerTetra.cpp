@@ -22,7 +22,7 @@ namespace GeDiM
 
     const GenericEdge* RefinerTetra::FindMaxEdge(GenericCell& cell)
     {
-        //ricerca lato piÃ¹ lungo
+        //ricerca lato più lungo
         double max = 0;
         unsigned int edge_pos;
         for(int i = 0; i < cell.NumberOfEdges(); i++)
@@ -41,7 +41,7 @@ namespace GeDiM
 
     const Output::ExitCodes RefinerTetra::CutTetra(GenericCell& cell)
     {
-        //Controllo che non sia giÃ  stato tagliato
+        //Controllo che non sia già stato tagliato
         if(cell.IsActive())
         {
             //cerco il lato da tagliare
@@ -70,12 +70,12 @@ namespace GeDiM
             Intersector2D1D& intersector = *cutter.intersector2D1D;
 			intersector.SetPlane(normal, translation);
 
-            if(cutter.CutCellTetra(cell, normal, translation, 1.0E-7) == Output::Success)
+            if(cutter.CutCell(cell, normal, translation) == Output::Success)
             {
                 cout << "success" << endl;
             }
 
-            RecoverConformity(cell, point, *edge_to_split);
+            //RecoverConformity(cell, point, *edge_to_split);
         }
         return Output::Success;
     }
@@ -120,7 +120,7 @@ namespace GeDiM
                     for(int k = 0; k < current_cell.NumberOfFaces(); k++)
                     {
                         const GenericFace& current_face_in_cell = *current_cell.Face(k);
-                        //controllo se faccia giÃ  tagliata
+                        //controllo se faccia già tagliata
                         if(&current_face == &current_face_in_cell  && !current_face.HasChilds())
                         {
                             faces.push_back(&current_face);
@@ -148,9 +148,11 @@ namespace GeDiM
                                     meshPointer->Face(faces[pos_faces]->Id())->SetState(false);
                                     meshPointer->Face(faces[pos_faces]->Id())->AddChild(new_faces[pos_new_faces]);
                                     meshPointer->Face(faces[pos_faces]->Id())->AddChild(new_faces[pos_new_faces +1]);
+
                                     //settaggio padre
-                                    new_faces[pos_new_faces]->SetFather(faces[pos_faces -1]);
-                                    new_faces[pos_new_faces + 1]->SetFather(faces[pos_faces -1]);
+                                    new_faces[pos_new_faces]->SetFather(faces[pos_faces]);
+                                    new_faces[pos_new_faces + 1]->SetFather(faces[pos_faces]);
+
                                     //aggiunta punti
                                     new_faces[pos_new_faces]->AddPoint(&middlePoint);
                                     new_faces[pos_new_faces]->AddPoint(points[pos_point]);
@@ -164,22 +166,23 @@ namespace GeDiM
                                     new_faces[pos_new_faces]->AddEdge(new_edges[pos_edge]);
                                     new_faces[pos_new_faces +1]->AddEdge(b);
                                     new_faces[pos_new_faces +1]->AddEdge(new_edges[pos_edge]);
+
                                     for(int y = 0; y < 3; y++)
-                                    {   
-                                        GenericEdge* temp_a;
-                                        GenericEdge* temp_b;
+                                    {
+                                        GenericEdge* g;
+                                        GenericEdge* e;
                                         if(faces[pos_faces]->Edge(y) != &long_edge && (faces[pos_faces]->Edge(y)->Point(0) == long_edge.Point(0) || faces[pos_faces]->Edge(y)->Point(1) == long_edge.Point(0)))
                                         {
                                             new_faces[pos_new_faces]->AddEdge(faces[pos_faces]->Edge(y));
-                                            temp_a = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
+                                            g = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
                                         }else if(faces[pos_faces]->Edge(y) != &long_edge)
                                         {
                                             new_faces[pos_new_faces +1]->AddEdge(faces[pos_faces]->Edge(y));
-                                            temp_b = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
+                                            e = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
                                         }
                                         //aggiunta dei lati g, e
-                                        edges.push_back(temp_a);
-                                        edges.push_back(temp_b);
+                                        edges.push_back(g);
+                                        edges.push_back(e);
                                     }
 
                                     meshPointer->AddFace(new_faces[pos_new_faces]);
@@ -189,7 +192,7 @@ namespace GeDiM
                         }
                         else if(&current_face == &current_face_in_cell)
                         {
-                            //aggiunta faccie giÃ  create
+                            //aggiunta faccie già create
                             unsigned int pos_faces = faces.size();
                             unsigned int pos_new_faces = new_faces.size();
                             faces.push_back(&current_face);
@@ -202,7 +205,7 @@ namespace GeDiM
                                 new_faces.push_back(meshPointer->Face(current_face.Child(1)->Id()));
                                 new_faces.push_back(meshPointer->Face(current_face.Child(0)->Id()));
                             }
-                            //aggiunta lato giÃ  creato e del punto opposto al medio
+                            //aggiunta lato già creato e del punto opposto al medio
                             for(int x = 0; x < 3; x++)
                             {
                                 if(current_face.Point(x) != long_edge.Point(0) && current_face.Point(x) != long_edge.Point(1))
@@ -216,12 +219,12 @@ namespace GeDiM
                                         {
                                             if(new_faces[pos_new_faces]->Edge(y)->Point(0) == points[pos_point] || new_faces[pos_new_faces]->Edge(y)->Point(1) == points[pos_point])
                                             {
-                                                GenericEdge* e = meshPointer->Edge(new_faces[pos_new_faces]->Edge(y)->Id());
-                                                new_edges.push_back(e);
+                                                new_edges.push_back(meshPointer->Edge(new_faces[pos_new_faces]->Edge(y)->Id()));
                                             }
                                         }
                                     }
                                 }
+                                //ricerca di g, e
                                 GenericEdge* temp_a;
                                 GenericEdge* temp_b;
                                 if(faces[pos_faces]->Edge(x) != &long_edge && (faces[pos_faces]->Edge(x)->Point(0) == long_edge.Point(0) || faces[pos_faces]->Edge(x)->Point(1) == long_edge.Point(0)))
