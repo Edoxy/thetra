@@ -347,19 +347,19 @@ namespace GeDiM
                 cells[1]->AddEdge(b);
                 meshPointer->Cell(current_cell.Id())->SetState(false);
 
-                //AGGIUNTA VICINI H
+                //AGGIUNTA VICINI h
                 meshPointer->Edge(edges[4]->Id())->AddCell(cells[0]);
                 meshPointer->Edge(edges[4]->Id())->AddCell(cells[1]);
                 meshPointer->Edge(edges[4]->Id())->AddFace(new_faces[4]);
 
-                //AGGIUNTA VICINI E e D
+                //AGGIUNTA VICINI E e D (vertici)   (Faccia G?)/lati c e d?
                 for(int j =0; j<2; j++)
                 {
                     meshPointer->Point(points[j]->Id())->AddCell(cells[0]);
                     meshPointer->Point(points[j]->Id())->AddCell(cells[1]);
                 }
 
-                //AGGIUNTA VICINI MIDDELPOINT
+                //AGGIUNTA VICINI MIDDELPOINT    (Faccia G?)/lati c e d?
                 meshPointer->Point(middlePoint.Id())->AddCell(cells[0]);
                 meshPointer->Point(middlePoint.Id())->AddCell(cells[1]);
                 //AGGIUNTA VICINI c E d
@@ -367,6 +367,7 @@ namespace GeDiM
                 {
                     new_edges[j]->AddCell(cells[0]);
                     new_edges[j]->AddCell(cells[1]);
+                    new_edges[j]->AddFace(new_faces[4]);
                 }
                 //AGGIUNTA VICINI G
                 new_faces[4]->AddCell(cells[0]);
@@ -383,6 +384,21 @@ namespace GeDiM
                 {
                     meshPointer->Edge(edges[j]->Id())->AddCell(cells[j]);
                     meshPointer->Edge(edges[j +2]->Id())->AddCell(cells[j]);
+                }
+
+                //AGGIORNO VICINI DI A, B, D, E
+                for(int j=0; j<4; j++)
+                {
+                    new_faces[j]->AddFace(new_faces[4]);
+                }
+
+                //AGGIORNO VICINI C, F
+                for(int j=2; j<4; j++)
+                {
+                     meshPointer->Face(faces[j]->Id())->AddFace(new_faces[j]);
+                     meshPointer->Face(faces[j]->Id())->AddFace(new_faces[j-2]);
+                     meshPointer->Face(faces[j]->Id())->AddFace(new_faces[4]);
+                     meshPointer->Face(faces[j]->Id())->AddCell(cells[j-2]);
                 }
             }
 

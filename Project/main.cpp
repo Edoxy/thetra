@@ -27,7 +27,7 @@ int main(int argc, char** argv)
     meshImportTetgen.CreateMesh(domain, mesh);
 	/// REFINE MESH
 
-	unsigned int numCellToRefiner = 2;
+	unsigned int numCellToRefiner = 4;
 	RefinerTetra refiner;
 	refiner.SetMesh(mesh);
 	refiner.InitializeIdCells(numCellToRefiner);
