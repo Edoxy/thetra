@@ -25,14 +25,9 @@ int main(int argc, char** argv)
     meshImportTetgen.CreateTetgenInput(domain);
     meshImportTetgen.CreateTetgenOutput(domain);
     meshImportTetgen.CreateMesh(domain, mesh);
-
-    cout << mesh.NumberOfCells() << endl;
-    cout << mesh.NumberOfFaces() << endl;
-
-
 	/// REFINE MESH
 
-	unsigned int numCellToRefiner = 1;
+	unsigned int numCellToRefiner = 2;
 	RefinerTetra refiner;
 	refiner.SetMesh(mesh);
 	refiner.InitializeIdCells(numCellToRefiner);
@@ -51,9 +46,6 @@ int main(int argc, char** argv)
     cout << mesh.CheckPointsInCells();
     cout << mesh.CheckPointsInFaces();*/
 	/// OUTPUT MESH TO MATLAB SCRIPT FOR VISUALIZATION
-
-	cout << mesh.NumberOfCells() << endl;
-    cout << mesh.NumberOfFaces() << endl;
 
 	mesh.CleanInactiveTreeNode();
 	ofstream file("plotTetrahedralMesh.m", ofstream::out );
