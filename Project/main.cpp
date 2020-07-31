@@ -20,14 +20,14 @@ int main(int argc, char** argv)
     domain.BuildParallelepiped(origin, length, height, width);
 
     MeshImport_Tetgen meshImportTetgen;
-    meshImportTetgen.SetMinimumNumberOfCells(1);
+    meshImportTetgen.SetMinimumNumberOfCells(10);
     GenericMesh mesh;
     meshImportTetgen.CreateTetgenInput(domain);
     meshImportTetgen.CreateTetgenOutput(domain);
     meshImportTetgen.CreateMesh(domain, mesh);
 	/// REFINE MESH
 
-	unsigned int numCellToRefiner = 4;
+	unsigned int numCellToRefiner = 10;
 	RefinerTetra refiner;
 	refiner.SetMesh(mesh);
 	refiner.InitializeIdCells(numCellToRefiner);

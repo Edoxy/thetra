@@ -2743,13 +2743,18 @@ namespace GeDiM
 		//			}
 		//		}
 
+
+        //if(face.NumberOfCells() >= 2){
 		for(unsigned int numCell = 0; numCell < 2; numCell++)
 		{
+
 			if(face.Cell(numCell) != NULL)
 			{
 				faceChild.InsertCell(face.Cell(numCell), numCell);
 			}
 		}
+        //}
+
 
 		//faceChild.SetCentroid(face.Centroid());
 		//faceChild.SetMeasure(face.Measure());

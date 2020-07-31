@@ -390,6 +390,7 @@ namespace GeDiM
                 for(int j=0; j<4; j++)
                 {
                     new_faces[j]->AddFace(new_faces[4]);
+                    new_faces[j]->AddCell(cells[j%2]);
                 }
 
                 //AGGIORNO VICINI C, F
