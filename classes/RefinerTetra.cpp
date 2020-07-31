@@ -175,13 +175,13 @@ namespace GeDiM
 
                                     GenericEdge* g;
                                     GenericEdge* e;
-                                    for(int y = 0; y < 3; y++)
+                                    for(int y = 0; y < 4; y++)
                                     {
-                                        if(faces[pos_faces]->Edge(y) != &long_edge && (faces[pos_faces]->Edge(y)->Point(0) == long_edge.Point(0) || faces[pos_faces]->Edge(y)->Point(1) == long_edge.Point(0)))
+                                        if(faces[pos_faces]->Edge(y) != a && faces[pos_faces]->Edge(y) != b  && (faces[pos_faces]->Edge(y)->Point(0) == long_edge.Point(0) || faces[pos_faces]->Edge(y)->Point(1) == long_edge.Point(0)))
                                         {
                                             new_faces[pos_new_faces]->AddEdge(faces[pos_faces]->Edge(y));
                                             g = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
-                                        }else if(faces[pos_faces]->Edge(y) != &long_edge)
+                                        }else if(faces[pos_faces]->Edge(y) != a && faces[pos_faces]->Edge(y) != b)
                                         {
                                             new_faces[pos_new_faces +1]->AddEdge(faces[pos_faces]->Edge(y));
                                             e = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
@@ -243,7 +243,7 @@ namespace GeDiM
                                 new_faces.push_back(meshPointer->Face(current_face.Child(1)->Id()));
                                 new_faces.push_back(meshPointer->Face(current_face.Child(0)->Id()));
                             }
-                            //aggiunta lato già creato e del punto opposto al medio
+                            //aggiunta lato già creato e del punto opposto al medio;  ricerca g ed e
                             GenericEdge* temp_a;
                             GenericEdge* temp_b;
                             for(int x = 0; x < 3; x++)
@@ -340,6 +340,8 @@ namespace GeDiM
                     cells[j]->AddFace(new_faces[j+2]);
                     cells[j]->AddFace(faces[j+2]);
                     meshPointer->AddCell(cells[j]);
+                    meshPointer->Cell(current_cell.Id())->AddChild(cells[j]);
+                    cells[j]->SetFather(&current_cell);
                 }
                 cells[0]->AddEdge(a);
                 cells[1]->AddEdge(b);
