@@ -41,16 +41,16 @@ namespace GeDiM
 
     const Output::ExitCodes RefinerTetra::CutTetra(GenericCell& cell)
     {
-        //Controllo che non sia gi� stato tagliato
+        //Controllo che non sia già stato tagliato
         if(cell.IsActive())
         {
+
             //cerco il lato da tagliare
             const GenericEdge* edge_to_split = this -> FindMaxEdge(cell);
             //trovo il punto medio
             Vector3d point = 0.5 * (edge_to_split -> Point(0) ->Coordinates() + edge_to_split -> Point(1) ->Coordinates());
 
-
-            CutterMesh3D cutter;
+            cutter.Reset();
             cutter.SetMesh(*meshPointer);
             Vector3d a[2];
             int j = 0;
@@ -70,26 +70,30 @@ namespace GeDiM
             Intersector2D1D& intersector = *cutter.intersector2D1D;
 			intersector.SetPlane(normal, translation);
 
-            if(cutter.CutCell(cell, normal, translation) == Output::Success)
+            /*if(cutter.CutCell(cell, normal, translation) == Output::Success)
             {
                 cout << "\nFirst cut successful"  << endl;
-            }
 
-            if(RecoverConformity(cell, point, *edge_to_split) == Output::Success)
-            {
-                cout << "Recover Conformity successful"  << endl;
-            }
+                if(RecoverConformity(cell, point, *edge_to_split) == Output::Success)
+                {
+                    cout << "Recover Conformity successful"  << endl;
+                }
+            }*/
+
+            FirstCut(cell.Id());
+            RecoverConformity(*edge_to_split);
+
         }
         return Output::Success;
     }
 
-    const Output::ExitCodes RefinerTetra::RecoverConformity(GenericCell& cell, const Vector3d new_point, const GenericEdge& long_edge)
+    const Output::ExitCodes RefinerTetra::RecoverConformity(const GenericEdge& long_edge)
     {
 
 
         const GenericPoint& middlePoint = *meshPointer->Point(meshPointer->NumberOfPoints() - 1);
 
-        //trovo a e b
+        //TROVO a, b
         GenericEdge* a;
         GenericEdge* b;
         if(static_cast<const GenericEdge*>(long_edge.Child(0))->Point(0) == long_edge.Point(0) || static_cast<const GenericEdge*>(long_edge.Child(0))->Point(1) == long_edge.Point(0))
@@ -101,11 +105,11 @@ namespace GeDiM
             b = meshPointer->Edge(long_edge.Child(0)->Id());
             a = meshPointer->Edge(long_edge.Child(1)->Id());
         }
-
+        //CICLO NELLE CELLE CON IL LATO CHE E' STATO TAGLIATO
         for (int i = 0; i < long_edge.NumberOfCells(); i++)
         {
-            if(long_edge.Cell(i) != &cell && !long_edge.Cell(i)->HasChilds())
-            {
+
+
 
                 //ciclo all'interno delle celle vicine di questo lato
                 //creazione dei due nuovi lati
@@ -124,13 +128,13 @@ namespace GeDiM
                     for(int k = 0; k < current_cell.NumberOfFaces(); k++)
                     {
                         const GenericFace& current_face_in_cell = *current_cell.Face(k);
-                        //controllo se faccia gi� tagliata
-                        if(&current_face == &current_face_in_cell  && current_face.NumberOfChilds() == 1)
+                        //CONTROLLO FACCIA SE GIA' TAGLIATA
+                        if(&current_face == &current_face_in_cell  && !current_face.HasChilds())
                         {
                             cout << "faccia da tagliare" << endl;
-                            GenericFace& current_child = *meshPointer->Face(current_face.Child(0)->Id());
+                            GenericFace& current_child = *meshPointer->Face(current_face.Id());
                             faces.push_back(&current_child);
-                            for(int x = 0; x < 4; x++)
+                            for(int x = 0; x < 3; x++)
                             {
                                 if(current_child.Point(x) != long_edge.Point(0) && current_child.Point(x) != long_edge.Point(1) && current_child.Point(x) != &middlePoint)
                                 {
@@ -175,13 +179,13 @@ namespace GeDiM
 
                                     GenericEdge* g;
                                     GenericEdge* e;
-                                    for(int y = 0; y < 4; y++)
+                                    for(int y = 0; y < 3; y++)
                                     {
-                                        if(faces[pos_faces]->Edge(y) != a && faces[pos_faces]->Edge(y) != b  && (faces[pos_faces]->Edge(y)->Point(0) == long_edge.Point(0) || faces[pos_faces]->Edge(y)->Point(1) == long_edge.Point(0)))
+                                        if(faces[pos_faces]->Edge(y) != &long_edge  && (faces[pos_faces]->Edge(y)->Point(0) == long_edge.Point(0) || faces[pos_faces]->Edge(y)->Point(1) == long_edge.Point(0)))
                                         {
                                             new_faces[pos_new_faces]->AddEdge(faces[pos_faces]->Edge(y));
                                             g = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
-                                        }else if(faces[pos_faces]->Edge(y) != a && faces[pos_faces]->Edge(y) != b)
+                                        }else if(faces[pos_faces]->Edge(y) != &long_edge)
                                         {
                                             new_faces[pos_new_faces +1]->AddEdge(faces[pos_faces]->Edge(y));
                                             e = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
@@ -225,7 +229,7 @@ namespace GeDiM
                             }
                         }
                         //CASO IN CUI LA FACCIA SIA GIA' STATA TAGLIATA
-                        else if(&current_face == &current_face_in_cell && current_face.NumberOfChilds() == 2)
+                        else if(&current_face == &current_face_in_cell && current_face.HasChilds())
                         {
                             //aggiunta facce già create
 
@@ -401,7 +405,7 @@ namespace GeDiM
                      meshPointer->Face(faces[j]->Id())->AddFace(new_faces[4]);
                      meshPointer->Face(faces[j]->Id())->AddCell(cells[j-2]);
                 }
-            }
+
 
         }
         return Output::Success;
@@ -416,8 +420,28 @@ namespace GeDiM
             if(CutTetra(*meshPointer->Cell(i)) == Output::Success)
             {
                 cout << "\n Operazione di Refining eseguita sul tetra di id " << meshPointer->Cell(idCellToRefine[i])->Id() << endl;
+                meshPointer->CleanInactiveTreeNode();
             }
         }
         return Output::Success;
+    }
+
+    const Output::ExitCodes RefinerTetra::FirstCut(unsigned int idCell)
+    {
+        GenericEdge* MaxEdge = meshPointer->Edge(FindMaxEdge(*meshPointer->Cell(idCell))->Id());
+        Vector3d c_point = 0.5 * ( MaxEdge-> Point(0) ->Coordinates() + MaxEdge -> Point(1) ->Coordinates());
+        GenericPoint* middlepoint = meshPointer->CreatePoint();
+        middlepoint->SetCoordinates(c_point);
+        meshPointer->AddPoint(middlepoint);
+        for(int i = 0; i < 2; i++)
+        {
+            GenericEdge* a = meshPointer->CreateEdge();
+            a->AddPoint(MaxEdge->Point(i));
+            a->AddPoint(middlepoint);
+            meshPointer->AddEdge(a);
+            MaxEdge->AddChild(a);
+            a->SetFather(MaxEdge);
+        }
+        MaxEdge->SetState(false);
     }
 }

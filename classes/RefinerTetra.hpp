@@ -5,7 +5,7 @@
 #include "vector"
 #include "list"
 #include "Output.hpp"
-
+#include "Cutter3D.hpp"
 namespace GeDiM
 {
     class RefinerTetra
@@ -18,8 +18,9 @@ namespace GeDiM
 
             const Output::ExitCodes FindMaxFace(GenericCell& cell) {}
             const Output::ExitCodes CutTetra(GenericCell& cell);
-            const Output::ExitCodes RecoverConformity(GenericCell& cell, const Vector3d new_point, const GenericEdge& long_edge);
+            const Output::ExitCodes RecoverConformity(const GenericEdge& long_edge);
             const GenericEdge* FindMaxEdge(GenericCell& cell);
+            CutterMesh3D cutter;
 
 
         public:
@@ -30,6 +31,7 @@ namespace GeDiM
             const Output::ExitCodes InitializeIdCells(const unsigned int& numberOfCells) { idCellToRefine.reserve(numberOfCells); return Output::Success;}
             const Output::ExitCodes	AddIdCell(const unsigned int& idCell);
             const Output::ExitCodes RefineMesh();
+            const Output::ExitCodes FirstCut(unsigned int);
     };
 }
 
