@@ -18,7 +18,7 @@ namespace GeDiM
 
             const Output::ExitCodes FindMaxFace(GenericCell& cell) {}
             const Output::ExitCodes CutTetra(GenericCell& cell);
-            const Output::ExitCodes RecoverConformity(const GenericEdge& long_edge);
+            const Output::ExitCodes RecoverConformity(const GenericEdge& long_edge, const GenericPoint&);
             const GenericEdge* FindMaxEdge(GenericCell& cell);
             CutterMesh3D cutter;
 
@@ -31,7 +31,7 @@ namespace GeDiM
             const Output::ExitCodes InitializeIdCells(const unsigned int& numberOfCells) { idCellToRefine.reserve(numberOfCells); return Output::Success;}
             const Output::ExitCodes	AddIdCell(const unsigned int& idCell);
             const Output::ExitCodes RefineMesh();
-            const Output::ExitCodes FirstCut(unsigned int);
+            const GenericPoint& FirstCut(unsigned int);
     };
 }
 
