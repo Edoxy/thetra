@@ -138,19 +138,19 @@ namespace GeDiM
                             {
                                 if(current_child.Point(x) != long_edge.Point(0) && current_child.Point(x) != long_edge.Point(1) && current_child.Point(x) != &middlePoint)
                                 {
-                                    unsigned int pos_point = points.size();
+                                    unsigned int pos_point = points.size();  //INDICE POSIZIONE NEL VETTORE POINTS DEL PUNTO OPPOSTO A MIDDLE POINT
                                     points.push_back(current_child.Point(x));
 
                                     //creazione nuovo edge
-                                    unsigned int pos_edge = new_edges.size();
+                                    unsigned int pos_edge = new_edges.size(); //INDICE POSIZIONE NEL VETTORE new_edges DEL NUOVO LATO CREATO
                                     new_edges.push_back(meshPointer->CreateEdge());
                                     new_edges[pos_edge]->AddPoint(&middlePoint);
                                     new_edges[pos_edge]->AddPoint(points[pos_point]);
                                     meshPointer->AddEdge(new_edges[pos_edge]);
 
                                     //Creazione nuove facce
-                                    unsigned int pos_new_faces = new_faces.size();
-                                    unsigned int pos_faces = faces.size() -1;
+                                    unsigned int pos_new_faces = new_faces.size(); //INDICE POSIZIONE NEL VETTORE new_faces DELLA PRIMA DELLE FACCE CREATE
+                                    unsigned int pos_faces = faces.size() -1;  //INDICE POSIZIONE NEL VETTORE faces DELLA FACCIA CHE STIAMO TAGLIANDO
                                     new_faces.push_back(meshPointer->CreateFace());
                                     new_faces.push_back(meshPointer->CreateFace());
 
@@ -218,7 +218,7 @@ namespace GeDiM
                                     //AGGIORNO VICNI NUOVE FACCE
                                     new_faces[pos_new_faces]->AddFace(new_faces[pos_new_faces +1]);
                                     new_faces[pos_new_faces +1]->AddFace(new_faces[pos_new_faces]);
-                                    //AGGIORNO g, e
+                                    //AGGIORNO g, e oppure i, f
                                     unsigned int x = edges.size()-1;
 
                                     meshPointer->Edge(edges[x-1]->Id())->AddFace(new_faces[pos_new_faces]);
@@ -356,16 +356,21 @@ namespace GeDiM
                 meshPointer->Edge(edges[4]->Id())->AddCell(cells[1]);
                 meshPointer->Edge(edges[4]->Id())->AddFace(new_faces[4]);
 
-                //AGGIUNTA VICINI E e D (vertici)   (Faccia G?)/lati c e d?
+                //AGGIUNTA VICINI E e D (vertici)
                 for(int j =0; j<2; j++)
                 {
                     meshPointer->Point(points[j]->Id())->AddCell(cells[0]);
                     meshPointer->Point(points[j]->Id())->AddCell(cells[1]);
                 }
 
-                //AGGIUNTA VICINI MIDDELPOINT    (Faccia G?)/lati c e d?
+                //AGGIUNTA VICINI MIDDELPOINT
                 meshPointer->Point(middlePoint.Id())->AddCell(cells[0]);
                 meshPointer->Point(middlePoint.Id())->AddCell(cells[1]);
+                //AGGIUNTA VICINI a E b
+                a->AddCell(cells[0]);
+                b->AddCell(cells[1]);
+
+
                 //AGGIUNTA VICINI c E d
                 for(int j=0; j<2; j++)
                 {
