@@ -32,6 +32,7 @@ namespace GeDiM
             const Output::ExitCodes	AddIdCell(const unsigned int& idCell);
             const Output::ExitCodes RefineMesh();
             const GenericPoint& FirstCut(unsigned int);
+            const Output::ExitCodes CellIntegrityCheck(const unsigned int& cell_id);
     };
 }
 

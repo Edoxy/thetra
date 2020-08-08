@@ -2043,10 +2043,10 @@ namespace GeDiM
 				pointTraces[pnt]->AddCell(edge.Cell(1));
 		}
 
-		if(edge.Cell(0) != NULL)
+		/*if(edge.Cell(0) != NULL)
 			UpdateCell(edge.Cell(0)->Id());
 		if(edge.Cell(1) != NULL)
-			UpdateCell(edge.Cell(1)->Id());
+			UpdateCell(edge.Cell(1)->Id());*/
 
 		return Output::Success;
 	}

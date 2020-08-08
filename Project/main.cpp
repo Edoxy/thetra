@@ -36,16 +36,16 @@ int main(int argc, char** argv)
         refiner.AddIdCell(numCell);
     refiner.RefineMesh();
     ///CONTROLLO DELLA MESH
-    /*cout << mesh.CheckDoubleCells();
-    cout << mesh.CheckDoubleEdges();
-    cout << mesh.CheckDoubleFaces();
-    cout << mesh.CheckDoublePoints();
-    cout << mesh.CheckEdgesInFaces();
-    cout << mesh.CheckNeigs();
-    cout << mesh.CheckPointsEqualsEdgesInCells2D();
-    cout << mesh.CheckPointsEqualsEdgesInFaces();
-    cout << mesh.CheckPointsInCells();
-    cout << mesh.CheckPointsInFaces();*/
+    //cout << mesh.CheckDoubleCells();
+    //cout << mesh.CheckDoubleEdges();
+    //mesh.CheckDoubleFaces();
+    //cout << mesh.CheckDoublePoints();
+    //cout << mesh.CheckEdgesInFaces();
+    //cout << mesh.CheckNeigs();
+    //cout << mesh.CheckPointsEqualsEdgesInCells2D();
+    //cout << mesh.CheckPointsEqualsEdgesInFaces();
+    //cout << mesh.CheckPointsInCells();
+    //cout << mesh.CheckPointsInFaces();
 	/// OUTPUT MESH TO MATLAB SCRIPT FOR VISUALIZATION
 
 	mesh.CleanInactiveTreeNode();

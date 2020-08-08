@@ -46,7 +46,7 @@ namespace GeDiM
         {
 
             //cerco il lato da tagliare
-            const GenericEdge* edge_to_split = this -> FindMaxEdge(cell);
+            GenericEdge* MaxEdge = meshPointer->Edge(FindMaxEdge(*meshPointer->Cell(cell.Id()))->Id());
             //trovo il punto medio
             /*Vector3d point = 0.5 * (edge_to_split -> Point(0) ->Coordinates() + edge_to_split -> Point(1) ->Coordinates());
 
@@ -80,7 +80,12 @@ namespace GeDiM
                     cout << "Recover Conformity successful"  << endl;
                 }
             }*/
-            RecoverConformity(*edge_to_split, FirstCut(cell.Id()));
+            const Vector3d c_point = 0.5 * ( MaxEdge-> Point(0) ->Coordinates() + MaxEdge -> Point(1) ->Coordinates());
+            //  CREAZIONE DEL PUNTO MEDIO
+            const vector<Vector3d> x = {c_point};
+            meshPointer->CutEdgeWithPoints(MaxEdge->Id(), x);
+            unsigned int pos_middle = meshPointer->NumberOfPoints()-1;
+            RecoverConformity(*MaxEdge, *meshPointer->Point(pos_middle));
 
         }
         return Output::Success;
@@ -115,10 +120,12 @@ namespace GeDiM
             //if(!current_cell.HasChilds())
             {
                 cout << "Nuova cella da rifinire\n" << endl;
+                if(CellIntegrityCheck(current_cell.Id()) == Output::Success)
+                    cout<<"Cell Integrity correct\n";
                 cout << "ID " << current_cell.Id() << "\n" << endl;
                 unsigned int counter = 0;
                 //CICLO NELLE FACCIE VICINE AL LATO TAGLIATO
-                for(int j = 0; j < current_cell.NumberOfFaces(); j++)
+                for(int j = 0; j < 4; j++)
                 {
                     const GenericFace& current_face = *current_cell.Face(j);
                     //CICLO NELLE FACCIE DEL TETRAEDRO CORRENTE
@@ -285,15 +292,15 @@ namespace GeDiM
                             }
                             edges.push_back(g);
                             edges.push_back(e);
-
                         }
                     }
                 }
+
                 if(counter != 2)
                     {
                         return Output::GenericError;
                     }
-                //TROVO H
+                //TROVO LATO h
                 for(int j=0; j<6; j++)
                 {
                     if(current_cell.Edge(j)->Point(0) == points[0] || current_cell.Edge(j)->Point(1) == points[0])
@@ -304,7 +311,7 @@ namespace GeDiM
                         }
                     }
                 }
-                //Cerco Facce C e F
+                //RICERCA DELLE FACCIE C e F
                 for(int j = 0; j < 4; j++)
                 {
                     faces.resize(4);
@@ -420,6 +427,10 @@ namespace GeDiM
                      meshPointer->Face(faces[j]->Id())->AddFace(new_faces[4]);
                      meshPointer->Face(faces[j]->Id())->AddCell(cells[j-2]);
                 }
+                unsigned int id_0 = cells[0]->Id();
+                unsigned int id_1 = cells[1]->Id();
+                if(CellIntegrityCheck(id_0) == Output::Success && CellIntegrityCheck(id_0) == Output::Success)
+                    cout<<"integrità tetraedri nuovi verificata\n";
             }
 
         }
@@ -444,22 +455,74 @@ namespace GeDiM
     const GenericPoint& RefinerTetra::FirstCut(unsigned int idCell)
     {
         GenericEdge* MaxEdge = meshPointer->Edge(FindMaxEdge(*meshPointer->Cell(idCell))->Id());
-        Vector3d c_point = 0.5 * ( MaxEdge-> Point(0) ->Coordinates() + MaxEdge -> Point(1) ->Coordinates());
+        const Vector3d c_point = 0.5 * ( MaxEdge-> Point(0) ->Coordinates() + MaxEdge -> Point(1) ->Coordinates());
         //  CREAZIONE DEL PUNTO MEDIO
-        GenericPoint* middlePoint = meshPointer->CreatePoint();
-        middlePoint->SetCoordinates(c_point);
-        meshPointer->AddPoint(middlePoint);
-        //CREAZIONE DEI DUE NUOVI LATI
-        for(int i = 0; i < 2; i++)
+        const vector<Vector3d> x = {c_point};
+        meshPointer->CutEdgeWithPoints(MaxEdge->Id(), x);
+    }
+
+    const Output::ExitCodes RefinerTetra::CellIntegrityCheck(const unsigned int& cell_id)
+    {
+        const GenericCell& cell = *meshPointer->Cell(cell_id);
+        ///CONTROLLO I PUNTI
+        if(cell.NumberOfPoints() != 4)//verifico il numero
+            {cout<<"Error: Number of points is not 4\n"; return Output::GenericError;}
+
+        ///CONTROLLO LATI
+        if(cell.NumberOfEdges() != 6)
+            {cout<<"Error: Number of edges is not 6\n"; return Output::GenericError;}
+        for(int i=0; i<6; i++)
         {
-            GenericEdge* a = meshPointer->CreateEdge();
-            a->AddPoint(MaxEdge->Point(i));
-            a->AddPoint(middlePoint);
-            meshPointer->AddEdge(a);
-            MaxEdge->AddChild(a);
-            a->SetFather(MaxEdge);
+            const GenericEdge* cell_edge = cell.Edge(i);
+            for(int j=0; j<2; j++)//controllo della correttezza dei punti
+            {
+                const GenericPoint* edge_point = cell_edge->Point(j);
+                if(edge_point != cell.Point(0) && edge_point != cell.Point(1) && edge_point != cell.Point(2) && edge_point != cell.Point(3))
+                {
+                    cout<<"Error: Edge with wrong points\n";
+                    return Output::GenericError;
+                }
+            }
+            unsigned int counter = 0;
+            for(int j=0; j<cell_edge->NumberOfFaces(); j++)//controllo che almeno due faccie condividano lo stesso lato
+            {
+                const GenericFace* edge_face = cell_edge->Face(j);
+                if(edge_face == cell.Face(0) || edge_face == cell.Face(1) || edge_face == cell.Face(2) || edge_face == cell.Face(3))
+                    counter ++;
+            }
+            if(counter != 2)
+            {
+                cout<<"Error: Edge with " << counter << " of the faces instead of 2\n";
+                return Output::GenericError;
+            }
         }
-        MaxEdge->SetState(false);
-        return *meshPointer->Point(middlePoint->Id());
+        ///CONTROLLO FACCIE
+        if(cell.NumberOfFaces() != 4)
+            {cout<<"Error: Number of faces is not 4\n"; return Output::GenericError;}
+        for(int i=0; i<4; i++)
+        {
+            const GenericFace* cell_face = cell.Face(i);
+            if(cell_face->NumberOfEdges() != 3)
+            {
+                cout<<"Error: Face with wrong number of edges\n";
+                return Output::GenericError;
+            }
+            if(cell_face->NumberOfPoints() != 3)
+            {
+                cout<<"Error: Face with wrong number of points\n";
+                return Output::GenericError;
+            }
+
+            for(int j=0; j<3; j++)//controllo della correttezza dei punti
+            {
+                const GenericPoint* face_point = cell_face->Point(j);
+                if(face_point != cell.Point(0) && face_point != cell.Point(1) && face_point != cell.Point(2) && face_point != cell.Point(3))
+                {
+                    cout<<"Error: face with wrong points\n";
+                    return Output::GenericError;
+                }
+            }
+        }
+        return Output::Success;
     }
 }
