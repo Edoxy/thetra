@@ -328,7 +328,7 @@ namespace GeDiM
                     cout << "ERROR: Size of edges = "<< edges.size()<<"\n";
                 if(faces.size() != 2)
                     cout << "ERROR: Size of faces = "<< faces.size()<<"\n";
-                
+
                 //TROVO LATO h
                 for(int j=0; j<6; j++)
                 {
@@ -538,7 +538,7 @@ namespace GeDiM
                 return Output::GenericError;
             }
             int counter_edge =0;
-            //CONTROLLO PERSENZA DEI LATI NEL TETRAEDRO
+            //CONTROLLO PRESENZA DEI LATI NEL TETRAEDRO
             for(int j=0; j<6; j++)
             {
                 if(cell.Edge(j) == cell_face->Edge(0) || cell.Edge(j) == cell_face->Edge(1) || cell.Edge(j) == cell_face->Edge(2))
