@@ -123,7 +123,7 @@ namespace GeDiM
                 if(CellIntegrityCheck(current_cell.Id()) == Output::Success)
                     cout<<"Cell Integrity correct\n";
                 cout << "ID " << current_cell.Id() << "\n" << endl;
-                unsigned int counter = 0;
+                unsigned int counter = 0;//controlla il numero di facce verificate(devono essere due)
                 //CICLO NELLE FACCIE VICINE AL LATO TAGLIATO
                 for(int j = 0; j < 4; j++)
                 {
@@ -136,37 +136,36 @@ namespace GeDiM
                         {
                             counter++;
                             cout << "\tFaccia da tagliare numero " << counter << "\n" << endl;
-                            GenericFace& current_child = *meshPointer->Face(current_face.Id());
-                            faces.push_back(&current_child);
+                            unsigned int pos_faces = faces.size();  //INDICE POSIZIONE NEL VETTORE faces DELLA FACCIA CHE STIAMO TAGLIANDO
+                            faces.push_back(meshPointer->Face(current_face.Id()));
                             //RICERCA DEL PUNTO OPPOSTO A MIDDLEPOINT
                             unsigned int pos_point = points.size();  //INDICE POSIZIONE NEL VETTORE POINTS DEL PUNTO OPPOSTO A MIDDLE POINT
                             for(int x = 0; x < 3; x++)
                             {
-                                if(current_child.Point(x) != long_edge.Point(0) && current_child.Point(x) != long_edge.Point(1) && current_child.Point(x) != &middlePoint)
+                                if(faces[pos_faces]->Point(x) != long_edge.Point(0) && faces[pos_faces]->Point(x) != long_edge.Point(1) && faces[pos_faces]->Point(x) != &middlePoint)
                                 {
-                                    points.push_back(current_child.Point(x));
+                                    points.push_back(faces[pos_faces]->Point(x));
                                 }
                             }
                             //creazione nuovo edge
-                            unsigned int pos_edge = new_edges.size(); //INDICE POSIZIONE NEL VETTORE new_edges DEL NUOVO LATO CREATO
+                            unsigned int pos_new_edge = new_edges.size(); //INDICE POSIZIONE NEL VETTORE new_edges DEL NUOVO LATO CREATO
                             new_edges.push_back(meshPointer->CreateEdge());
-                            new_edges[pos_edge]->AddPoint(&middlePoint);
-                            new_edges[pos_edge]->AddPoint(points[pos_point]);
-                            meshPointer->AddEdge(new_edges[pos_edge]);
+                            new_edges[pos_new_edge]->AddPoint(&middlePoint);
+                            new_edges[pos_new_edge]->AddPoint(points[pos_point]);
+                            meshPointer->AddEdge(new_edges[pos_new_edge]);
 
-                            //Creazione nuove facce
+                            //CREAZIONE DELLE DUE NUOVE FACCIE
                             unsigned int pos_new_faces = new_faces.size(); //INDICE POSIZIONE NEL VETTORE new_faces DELLA PRIMA DELLE FACCE CREATE
-                            unsigned int pos_faces = faces.size() -1;  //INDICE POSIZIONE NEL VETTORE faces DELLA FACCIA CHE STIAMO TAGLIANDO
                             new_faces.push_back(meshPointer->CreateFace());
                             new_faces.push_back(meshPointer->CreateFace());
 
-                            //deattivazione faccia
+                            //DEATTIVAZIONE DELLA FACCIA PADRE E AGGIUNTA DEI FIGLI
                             meshPointer->Face(faces[pos_faces]->Id())->SetState(false);
                             meshPointer->Face(faces[pos_faces]->Id())->InitializeChilds(2);
                             meshPointer->Face(faces[pos_faces]->Id())->AddChild(new_faces[pos_new_faces]);
                             meshPointer->Face(faces[pos_faces]->Id())->AddChild(new_faces[pos_new_faces +1]);
 
-                            //settaggio padre
+                            //SETTAGIO DEL PADRE
                             new_faces[pos_new_faces]->SetFather(faces[pos_faces]);
                             new_faces[pos_new_faces + 1]->SetFather(faces[pos_faces]);
 
@@ -180,16 +179,10 @@ namespace GeDiM
                             new_faces[pos_new_faces +1]->AddPoint(points[pos_point]);
                             new_faces[pos_new_faces +1]->AddPoint(long_edge.Point(1));
 
-                            //AGGIUNTA LATI ALLE FACCE
-                            new_faces[pos_new_faces]->InitializeEdges(3);
-                            new_faces[pos_new_faces +1]->InitializeEdges(3);
-                            new_faces[pos_new_faces]->AddEdge(a);
-                            new_faces[pos_new_faces]->AddEdge(new_edges[pos_edge]);
-                            new_faces[pos_new_faces +1]->AddEdge(b);
-                            new_faces[pos_new_faces +1]->AddEdge(new_edges[pos_edge]);
                             //RICERCA g, e
                             GenericEdge* g;
                             GenericEdge* e;
+                            unsigned int pos_edges = edges.size();
                             for(int y = 0; y < 3; y++)
                             {
                                 if(faces[pos_faces]->Edge(y) != &long_edge)
@@ -197,44 +190,55 @@ namespace GeDiM
                                     if(faces[pos_faces]->Edge(y)->Point(0) == long_edge.Point(0) || faces[pos_faces]->Edge(y)->Point(1) == long_edge.Point(0))
                                     {
                                         g = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
-                                        new_faces[pos_new_faces]->AddEdge(g);
                                     }else
                                     {
                                         e = meshPointer->Edge(faces[pos_faces]->Edge(y)->Id());
-                                        new_faces[pos_new_faces +1]->AddEdge(e);
                                     }
                                 }
                             }
                             edges.push_back(g);
                             edges.push_back(e);
 
+                            //AGGIUNTA LATI ALLE FACCE
+                            new_faces[pos_new_faces]->InitializeEdges(3);
+                            new_faces[pos_new_faces +1]->InitializeEdges(3);
+                            new_faces[pos_new_faces]->AddEdge(a);
+                            new_faces[pos_new_faces +1]->AddEdge(b);
+                            new_faces[pos_new_faces]->AddEdge(new_edges[pos_new_edge]);
+                            new_faces[pos_new_faces +1]->AddEdge(new_edges[pos_new_edge]);
+                            new_faces[pos_new_faces]->AddEdge(edges[pos_edges]);
+                            new_faces[pos_new_faces +1]->AddEdge(edges[pos_edges +1]);
+                            
+
                             meshPointer->AddFace(new_faces[pos_new_faces]);
                             meshPointer->AddFace(new_faces[pos_new_faces +1]);
 
                             //AGGIORNO VICINI c E d
-                            new_edges[pos_edge]->AddFace(new_faces[pos_new_faces]);
-                            new_edges[pos_edge]->AddFace(new_faces[pos_new_faces +1]);
+                            new_edges[pos_new_edge]->AddFace(new_faces[pos_new_faces]);
+                            new_edges[pos_new_edge]->AddFace(new_faces[pos_new_faces +1]);
 
                             //AGGIORNO VICINI E e D
                             meshPointer->Point(points[pos_point]->Id())->AddFace(new_faces[pos_new_faces]);
                             meshPointer->Point(points[pos_point]->Id())->AddFace(new_faces[pos_new_faces +1]);
+                            meshPointer->Point(points[pos_point]->Id())->AddEdge(new_edges[pos_new_edge]);
 
-                            meshPointer->Point(points[pos_point]->Id())->AddEdge(new_edges[pos_edge]);
                             //AGGIORNO VICINI MIDDLEPOINT
-                            meshPointer->Point(middlePoint.Id())->AddEdge(new_edges[pos_edge]);
+                            meshPointer->Point(middlePoint.Id())->AddEdge(new_edges[pos_new_edge]);
                             meshPointer->Point(middlePoint.Id())->AddFace(new_faces[pos_new_faces]);
                             meshPointer->Point(middlePoint.Id())->AddFace(new_faces[pos_new_faces +1]);
+
                             //AGGIORNO a E b
                             a->AddFace(new_faces[pos_new_faces]);
-                            a->AddEdge(new_edges[pos_edge]);
+                            a->AddEdge(new_edges[pos_new_edge]);
                             b->AddFace(new_faces[pos_new_faces +1]);
-                            b->AddEdge(new_edges[pos_edge]);
+                            b->AddEdge(new_edges[pos_new_edge]);
+
                             //AGGIORNO VICNI NUOVE FACCE
                             new_faces[pos_new_faces]->AddFace(new_faces[pos_new_faces +1]);
                             new_faces[pos_new_faces +1]->AddFace(new_faces[pos_new_faces]);
+
                             //AGGIORNO g, e oppure i, f
                             unsigned int x = edges.size()-1;
-
                             meshPointer->Edge(edges[x-1]->Id())->AddFace(new_faces[pos_new_faces]);
                             meshPointer->Edge(edges[x]->Id())->AddFace(new_faces[pos_new_faces +1]);
                         }
@@ -243,14 +247,14 @@ namespace GeDiM
                         {
                             counter++;
                             //AGGIUNTA FACCIA SE GIA' TAGLIATA
-
                             cout << "\tFaccia gia' tagliata numero " << counter << "\n" << endl;
 
-                            unsigned int pos_faces = faces.size();
-                            unsigned int pos_new_faces = new_faces.size();
+                            unsigned int pos_faces = faces.size();//indice posizione vettore faces
+                            unsigned int pos_new_faces = new_faces.size();//indice posizione vettore new_faces
                             faces.push_back(&current_face);
                             if(current_face.NumberOfChilds() != 2)
                                 cout << "Error: face with "<<current_face.NumberOfChilds()<<" childs\n";
+                            
                             if(meshPointer->Face(current_face.Child(0)->Id())->Edge(0) == a || meshPointer->Face(current_face.Child(0)->Id())->Edge(1) == a || meshPointer->Face(current_face.Child(0)->Id())->Edge(2) == a)
                             {
                                 new_faces.push_back(meshPointer->Face(current_face.Child(0)->Id()));
@@ -260,6 +264,7 @@ namespace GeDiM
                                 new_faces.push_back(meshPointer->Face(current_face.Child(1)->Id()));
                                 new_faces.push_back(meshPointer->Face(current_face.Child(0)->Id()));
                             }
+
                             //RICERCA E oppure D
                             unsigned int pos_point = points.size();
                             for(int x = 0; x < 3; x++)
@@ -269,6 +274,7 @@ namespace GeDiM
                                     points.push_back(new_faces[pos_new_faces]->Point(x));
                                 }
                             }
+
                             //RICERCA DI c oppure d
                             unsigned int pos_new_edges = new_edges.size();
                             for (int y = 0; y < 3; y++)
@@ -451,10 +457,10 @@ namespace GeDiM
                 //AGGIORNO VICINI C, F
                 for(int j=2; j<4; j++)
                 {
-                     meshPointer->Face(faces[j]->Id())->AddFace(new_faces[j]);
-                     meshPointer->Face(faces[j]->Id())->AddFace(new_faces[j-2]);
-                     meshPointer->Face(faces[j]->Id())->AddFace(new_faces[4]);
-                     meshPointer->Face(faces[j]->Id())->AddCell(cells[j-2]);
+                    meshPointer->Face(faces[j]->Id())->AddFace(new_faces[j]);
+                    meshPointer->Face(faces[j]->Id())->AddFace(new_faces[j-2]);
+                    meshPointer->Face(faces[j]->Id())->AddFace(new_faces[4]);
+                    meshPointer->Face(faces[j]->Id())->AddCell(cells[j-2]);
                 }
                 unsigned int id_0 = cells[0]->Id();
                 unsigned int id_1 = cells[1]->Id();
@@ -464,6 +470,11 @@ namespace GeDiM
                     cout<<"Cell integrity ID "<< id_1 << " correct\n";
             }
 
+        }
+        for(int i=0; i<meshPointer->NumberOfCells();i++)
+        {
+            if(CellIntegrityCheck(i) == Output::Success)
+                    cout<<"Cell integrity ID "<< i << " correct\n";
         }
         return Output::Success;
 
@@ -514,7 +525,7 @@ namespace GeDiM
                 }
             }
             unsigned int counter = 0;
-            for(int j=0; j<cell_edge->NumberOfFaces(); j++)//controllo che almeno due faccie condividano lo stesso lato
+            for(int j=0; j<cell_edge->NumberOfFaces(); j++)//controllo che due faccie condividano lo stesso lato
             {
                 const GenericFace* edge_face = cell_edge->Face(j);
                 if(edge_face == cell.Face(0) || edge_face == cell.Face(1) || edge_face == cell.Face(2) || edge_face == cell.Face(3))
@@ -555,6 +566,28 @@ namespace GeDiM
                 cout<<"Error: face with double edges\n";
                 return Output::GenericError;
             }
+            //CONTROLLO CHE LE FACCIE TRA LORO ABBIANO UN SOLO LATO IN COMUNE
+            if(i < 3)
+            {
+                for(int j=i+1; j<4; j++)
+                {
+                    int counter = 0;
+                    for(int x=0; x<3; x++)
+                    {
+                        for(int y=0; y<3; y++)
+                        {
+                            if(cell_face->Edge(x) == cell.Face(j)->Edge(y))
+                                counter++;
+                        }
+                    }
+                    if(counter != 1)
+                    {
+                        cout<<"Error: 2 faces have " << counter << " in common\n";
+                        return Output::GenericError;
+                    }
+                }
+            }
+
             if(cell_face->NumberOfPoints() != 3)
             {
                 cout<<"Error: Face with wrong number of points\n";
@@ -573,4 +606,5 @@ namespace GeDiM
         }
         return Output::Success;
     }
+
 }
