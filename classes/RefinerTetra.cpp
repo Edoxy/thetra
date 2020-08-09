@@ -117,7 +117,7 @@ namespace GeDiM
             vector <GenericCell*> cells;
 
             const GenericCell& current_cell = *long_edge.Cell(i);
-            //if(!current_cell.HasChilds())
+            if(current_cell.IsActive())
             {
                 cout << "Nuova cella da rifinire\n" << endl;
                 if(CellIntegrityCheck(current_cell.Id()) == Output::Success)
@@ -443,10 +443,9 @@ namespace GeDiM
 
         for(int i = 0; i < idCellToRefine.size(); i++)
         {
-            if(CutTetra(*meshPointer->Cell(i)) == Output::Success)
+            if(CutTetra(*meshPointer->Cell(idCellToRefine[i])) == Output::Success)
             {
                 cout << "\t\tOperazione di Refining eseguita sul tetra di id " << meshPointer->Cell(idCellToRefine[i])->Id() << endl;
-                meshPointer->CleanInactiveTreeNode();
             }
         }
         return Output::Success;

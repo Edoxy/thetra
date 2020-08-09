@@ -32,8 +32,9 @@ int main(int argc, char** argv)
 	RefinerTetra refiner;
 	refiner.SetMesh(mesh);
 	refiner.InitializeIdCells(numCellToRefiner);
+	int v[8] = {0, 4, 9, 13};
 	for(unsigned int numCell = 0; numCell < numCellToRefiner; numCell++)
-        refiner.AddIdCell(numCell);
+        refiner.AddIdCell(v[numCell]);
     refiner.RefineMesh();
     ///CONTROLLO DELLA MESH
     //cout << mesh.CheckDoubleCells();
