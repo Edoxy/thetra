@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 	RefinerTetra refiner;
 	refiner.SetMesh(mesh);
 	refiner.InitializeIdCells(numCellToRefiner);
-	int v[8] = {0, 4, 9, 13};
+	int v[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
 	for(unsigned int numCell = 0; numCell < numCellToRefiner; numCell++)
         refiner.AddIdCell(v[numCell]);
     refiner.RefineMesh();
