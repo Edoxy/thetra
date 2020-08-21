@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     domain.BuildParallelepiped(origin, length, height, width);
 
     MeshImport_Tetgen meshImportTetgen;
-    meshImportTetgen.SetMinimumNumberOfCells(1);
+    meshImportTetgen.SetMinimumNumberOfCells(100);
     GenericMesh mesh;
     meshImportTetgen.CreateTetgenInput(domain);
     meshImportTetgen.CreateTetgenOutput(domain);

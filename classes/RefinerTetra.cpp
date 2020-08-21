@@ -1,7 +1,7 @@
 #include "RefinerTetra.hpp"
 #include "Output.hpp"
 #include "Cutter3D.hpp"
-#define DEBUG
+//#define DEBUG
 
 using namespace MainApplication;
 
@@ -51,7 +51,24 @@ namespace GeDiM
             const Vector3d c_point = 0.5 * ( MaxEdge-> Point(0) ->Coordinates() + MaxEdge -> Point(1) ->Coordinates());
             //  CREAZIONE DEL PUNTO MEDIO
             const vector<Vector3d> x = {c_point};
-            meshPointer->CutEdgeWithPoints(MaxEdge->Id(), x);
+            //meshPointer->CutEdgeWithPoints(MaxEdge->Id(), x);
+            GenericPoint* middle = meshPointer->CreatePoint();
+            middle->SetCoordinates(c_point);
+            meshPointer->AddPoint(middle);
+            //CREAZIONE FIGLI
+            MaxEdge->SetState(false);
+            for(int i = 0; i<2; i++)
+            {
+                GenericEdge* new_edge = meshPointer->CreateEdge();
+                new_edge->SetFather(MaxEdge);
+                new_edge->AddPoint(MaxEdge->Point(i));
+                new_edge->AddPoint(middle);
+                MaxEdge->AddChild(new_edge);
+                meshPointer->AddEdge(new_edge);
+            }
+#ifdef DEBUG
+            EdgesCheck();
+#endif
             unsigned int pos_middle = meshPointer->NumberOfPoints()-1;
             RecoverConformity(*MaxEdge, *meshPointer->Point(pos_middle));
 
@@ -465,7 +482,7 @@ namespace GeDiM
                     cout<<"ERROR: Cell ID " << id_0 << " NOT CORRECT\n";
                 }
 
-                if(CellIntegrityCheck(id_0) == Output::Success)
+                if(CellIntegrityCheck(id_1) == Output::Success)
                 {
 #ifdef DEBUG
                     cout<<"Cell integrity ID "<< id_1 << " correct\n";
@@ -482,14 +499,23 @@ namespace GeDiM
 
     const Output::ExitCodes RefinerTetra::RefineMesh()
     {
-
+        
+#ifdef DEBUG
+        cout << idCellToRefine << endl;
+#endif
         for(int i = 0; i < idCellToRefine.size(); i++)
         {
 #ifdef DEBUG
-            for(int i=0; i<meshPointer->NumberOfCells();i++)
+            EdgesCheck();
+            for(int j=0; j < meshPointer->NumberOfCells();j++)
             {
-                if(CellIntegrityCheck(i) == Output::Success)
-                        cout<<"CELL integrity ID "<< i << " correct\t" << meshPointer->Cell(idCellToRefine[i]) << endl;
+                if(CellIntegrityCheck(j) == Output::Success)
+                    cout<<"CELL integrity ID "<< j << " correct\t" << meshPointer->Cell(j) << endl;
+                else
+                {
+                    cout << "CHECK ERROR: Cell Integrity; ID " << j << endl;
+                }
+                
             }
             cout << "Inizio Refining cella id " << idCellToRefine[i]<< "\tIndirizzo "<< meshPointer->Cell(idCellToRefine[i]) << endl;
 #endif
@@ -498,7 +524,7 @@ namespace GeDiM
 #ifdef DEBUG
                 cout << "\tOperazione di Refining eseguita sul tetra di id " << meshPointer->Cell(idCellToRefine[i])->Id() << endl;
 #endif
-                meshPointer->CleanInactiveTreeNode();
+                //meshPointer->CleanInactiveTreeNode();
             }else
             {
                 cout << "ERROR: Operazione refinig fallita; ID " << idCellToRefine[i] << endl;
@@ -508,18 +534,10 @@ namespace GeDiM
         return Output::Success;
     }
 
-    const GenericPoint& RefinerTetra::FirstCut(unsigned int idCell)
-    {
-        GenericEdge* MaxEdge = meshPointer->Edge(FindMaxEdge(*meshPointer->Cell(idCell))->Id());
-        const Vector3d c_point = 0.5 * ( MaxEdge-> Point(0) ->Coordinates() + MaxEdge -> Point(1) ->Coordinates());
-        //  CREAZIONE DEL PUNTO MEDIO
-        const vector<Vector3d> x = {c_point};
-        meshPointer->CutEdgeWithPoints(MaxEdge->Id(), x);
-    }
-
     const Output::ExitCodes RefinerTetra::CellIntegrityCheck(const unsigned int& cell_id)
     {
         const GenericCell& cell = *meshPointer->Cell(cell_id);
+
         ///CONTROLLO I PUNTI
         if(cell.NumberOfPoints() != 4)//verifico il numero
             {cout<<"Error: Number of points is not 4\n"; return Output::GenericError;}
@@ -550,6 +568,15 @@ namespace GeDiM
             {
                 cout<<"Error: Edge di id " << cell_edge->Id() << " with " << counter << " of the faces instead of 2\n";
                 return Output::GenericError;
+            }
+            for(int j=0; j<cell_edge->NumberOfCells();j++)//controllo assenza di vicini vuoti
+            {
+                if(cell_edge->Cell(j) == 0 || cell_edge->Cell(j) == NULL)
+                {
+                    cout << "ERROR: Edge di id " << cell_edge->Id() << " with a NULL neighbour\n";
+
+                    return Output::GenericError;
+                }
             }
         }
         ///CONTROLLO FACCIE
@@ -622,4 +649,23 @@ namespace GeDiM
         return Output::Success;
     }
 
+    const Output::ExitCodes RefinerTetra::EdgesCheck()
+    {
+        cout << "EDGE CHECK..." << endl;
+        for(int i = 0; i < meshPointer->NumberOfEdges(); i++)
+        {
+            cout <<"Edge ID " << meshPointer->Edge(i)->Id() << endl;
+            for(int j = 0; j<meshPointer->Edge(i)->NumberOfCells(); j++)
+            {
+                if(meshPointer->Edge(i)->Cell(j) == 0 || meshPointer->Edge(i)->Cell(j) == NULL)
+                {
+                    cout << "NULL" <<"\t";
+                }
+                
+                cout << meshPointer->Edge(i)->Cell(j) << "\t";
+            }
+            cout << endl << endl;
+        }
+        cout << "END OF EDGE CHECK"<< endl;
+    }
 }
