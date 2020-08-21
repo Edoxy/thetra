@@ -1,6 +1,7 @@
 #include "RefinerTetra.hpp"
 #include "Output.hpp"
 #include "Cutter3D.hpp"
+#define DEBUG
 
 using namespace MainApplication;
 
@@ -22,7 +23,7 @@ namespace GeDiM
 
     const GenericEdge* RefinerTetra::FindMaxEdge(GenericCell& cell)
     {
-        //ricerca lato pi� lungo
+        //ricerca lato piu' lungo
         double max = 0;
         unsigned int edge_pos;
         for(int i = 0; i < cell.NumberOfEdges(); i++)
@@ -47,39 +48,6 @@ namespace GeDiM
 
             //cerco il lato da tagliare
             GenericEdge* MaxEdge = meshPointer->Edge(FindMaxEdge(*meshPointer->Cell(cell.Id()))->Id());
-            //trovo il punto medio
-            /*Vector3d point = 0.5 * (edge_to_split -> Point(0) ->Coordinates() + edge_to_split -> Point(1) ->Coordinates());
-
-            cutter.Reset();
-            cutter.SetMesh(*meshPointer);
-            Vector3d a[2];
-            int j = 0;
-            for(int i = 0; i < cell.NumberOfPoints() ; i++)
-            {
-                const GenericPoint* current_point = cell.Point(i);
-                if(current_point != edge_to_split->Point(0) && current_point != edge_to_split->Point(1))
-                {
-                    a[j] = current_point -> Coordinates() - point;
-                    j++;
-                }
-            }
-            Vector3d normal = a[0].cross(a[1]);
-            normal.normalize();
-            double translation = normal.dot(point);
-            cutter.intersector2D1D = new Intersector2D1D;
-            Intersector2D1D& intersector = *cutter.intersector2D1D;
-			intersector.SetPlane(normal, translation);
-
-
-            if(cutter.CutCell(cell, normal, translation) == Output::Success)
-            {
-                cout << "\nFirst cut successful"  << endl;
-
-                if(RecoverConformity(cell, point, *edge_to_split) == Output::Success)
-                {
-                    cout << "Recover Conformity successful"  << endl;
-                }
-            }*/
             const Vector3d c_point = 0.5 * ( MaxEdge-> Point(0) ->Coordinates() + MaxEdge -> Point(1) ->Coordinates());
             //  CREAZIONE DEL PUNTO MEDIO
             const vector<Vector3d> x = {c_point};
@@ -122,12 +90,23 @@ namespace GeDiM
             vector <GenericCell*> cells;
 
             const GenericCell& current_cell = *long_edge.Cell(i);
-            if(current_cell.IsActive())
+#ifdef DEBUG
+            cout << "indice\t" << i << "\tIndirizzo\t" << long_edge.Cell(i) << endl;
+#endif
+            if(&current_cell != 0 && current_cell.IsActive())
             {
-                cout << "Nuova cella da rifinire\n" << endl;
+#ifdef DEBUG
+                cout << "Nuova cella da rifinire\tID\t" << current_cell.Id() << endl;
+#endif
                 if(CellIntegrityCheck(current_cell.Id()) == Output::Success)
+                {
+#ifdef DEBUG
                     cout<<"Cell Integrity correct\n";
-                cout << "ID " << current_cell.Id() << "\n" << endl;
+#endif
+                }else
+                {
+                    cout<<"ERROR: Cell ID "<< current_cell.Id() << " NOT CORRECT\n";
+                }
                 unsigned int counter = 0;//controlla il numero di facce verificate(devono essere due)
                 //CICLO NELLE FACCIE VICINE AL LATO TAGLIATO
                 for(int j = 0; j < 4; j++)
@@ -140,7 +119,9 @@ namespace GeDiM
                         if(!current_face.HasChilds())
                         {
                             counter++;
-                            cout << "\tFaccia di id " << current_face.Id() << " da tagliare numero " << counter << "\n" << endl;
+#ifdef DEBUG
+                            cout << "\tFaccia di id " << current_face.Id() << " da tagliare numero " << counter << "\n";
+#endif
                             unsigned int pos_faces = faces.size();  //INDICE POSIZIONE NEL VETTORE faces DELLA FACCIA CHE STIAMO TAGLIANDO
                             faces.push_back(meshPointer->Face(current_face.Id()));
                             //RICERCA DEL PUNTO OPPOSTO A MIDDLEPOINT
@@ -250,13 +231,14 @@ namespace GeDiM
                         {
                             counter++;
                             //AGGIUNTA FACCIA SE GIA' TAGLIATA
+#ifdef DEBUG
                             cout << "\tFaccia di id " << current_face.Id() << " gia' tagliata numero " << counter << "\n" << endl;
-
+#endif
                             unsigned int pos_faces = faces.size();//indice posizione vettore faces
                             unsigned int pos_new_faces = new_faces.size();//indice posizione vettore new_faces
                             faces.push_back(&current_face);
                             if(current_face.NumberOfChilds() != 2)
-                                cout << "Error: face with "<<current_face.NumberOfChilds()<<" childs\n";
+                                cout << "ERROR: face with "<<current_face.NumberOfChilds()<<" childs\n";
 
                             if(meshPointer->Face(current_face.Child(0)->Id())->Edge(0) == a || meshPointer->Face(current_face.Child(0)->Id())->Edge(1) == a || meshPointer->Face(current_face.Child(0)->Id())->Edge(2) == a)
                             {
@@ -302,21 +284,17 @@ namespace GeDiM
                             if(count_ge != 1)
                                 cout << "ERROR: too many g edges\n";
                             count_ge = 0;
-                            int count_b = 0;
-                            int count_new_edge = 0;
+
                             for(int y = 0; y < 3; y++)//RICERCA DI e
                             {
-                                if(faces[pos_faces]->Edge(y) != &long_edge)
+                                if(new_faces[pos_new_faces +1]->Edge(y) != b && new_faces[pos_new_faces +1]->Edge(y) != new_edges[pos_new_edges])
                                 {
-                                    if(faces[pos_faces]->Edge(y)->Point(0) == long_edge.Point(1)  || faces[pos_faces]->Edge(y)->Point(1) == long_edge.Point(1))
-                                    {
-                                        edges.push_back(meshPointer->Edge(faces[pos_faces]->Edge(y)->Id()));
-                                        count_ge++;
-                                    }
+                                    edges.push_back(meshPointer->Edge(new_faces[pos_new_faces +1]->Edge(y)->Id()));
+                                    count_ge++;
                                 }
                             }
                             if(count_ge != 1)
-                                cout << "ERROR: too many e edges "<< count_b << count_new_edge << endl;
+                                cout << "ERROR: too many e edges\n";
                         }
                     }
                 }
@@ -374,14 +352,16 @@ namespace GeDiM
                 new_faces[4]->AddEdge(edges[4]);
                 meshPointer->AddFace(new_faces[4]);
 
+#ifdef DEBUG
+                
                 cout << "Tabella Nomi \n";
                 cout << points[0]->Id() << "\t" << new_edges[0]->Id() << "\t" << new_faces[0]->Id() << "\t" << edges[0]->Id() << "\t" << faces[0]->Id() << "\n";
                 cout << points[1]->Id() << "\t" << new_edges[1]->Id() << "\t" << new_faces[1]->Id() << "\t" << edges[1]->Id() << "\t" << faces[1]->Id() << "\n";
                 cout << "\t\t"<< new_faces[2]->Id() << "\t" << edges[2]->Id() << "\t" << faces[2]->Id() << "\n";
                 cout << "\t\t"<< new_faces[3]->Id() << "\t" << edges[3]->Id() << "\t" << faces[3]->Id() << "\n";
                 cout << "\t\t"<< new_faces[4]->Id() << "\t" << edges[4]->Id() << "\t" <<"\n";
-
-
+                
+#endif
                 //CREAZIONE NUOVE CELLE
                 for(int j=0; j<2; j++)
                 {
@@ -471,19 +451,30 @@ namespace GeDiM
                     meshPointer->Face(faces[j]->Id())->AddFace(new_faces[4]);
                     meshPointer->Face(faces[j]->Id())->AddCell(cells[j-2]);
                 }
+
+                ///CONTROLLO INTEGRITA' DEI FIGLI CREATI
                 unsigned int id_0 = cells[0]->Id();
                 unsigned int id_1 = cells[1]->Id();
                 if(CellIntegrityCheck(id_0) == Output::Success)
+                {
+#ifdef DEBUG
                     cout<<"Cell integrity ID "<< id_0 << " correct\n";
-                if(CellIntegrityCheck(id_1) == Output::Success)
-                    cout<<"Cell integrity ID "<< id_1 << " correct\n";
-            }
+#endif
+                }else
+                {
+                    cout<<"ERROR: Cell ID " << id_0 << " NOT CORRECT\n";
+                }
 
-        }
-        for(int i=0; i<meshPointer->NumberOfCells();i++)
-        {
-            if(CellIntegrityCheck(i) == Output::Success)
-                    cout<<"Cell integrity ID "<< i << " correct\n";
+                if(CellIntegrityCheck(id_0) == Output::Success)
+                {
+#ifdef DEBUG
+                    cout<<"Cell integrity ID "<< id_1 << " correct\n";
+#endif
+                }else
+                {
+                    cout<<"ERROR: Cell ID " << id_1 << " NOT CORRECT\n";
+                }
+            }
         }
         return Output::Success;
 
@@ -494,9 +485,24 @@ namespace GeDiM
 
         for(int i = 0; i < idCellToRefine.size(); i++)
         {
+#ifdef DEBUG
+            for(int i=0; i<meshPointer->NumberOfCells();i++)
+            {
+                if(CellIntegrityCheck(i) == Output::Success)
+                        cout<<"CELL integrity ID "<< i << " correct\t" << meshPointer->Cell(idCellToRefine[i]) << endl;
+            }
+            cout << "Inizio Refining cella id " << idCellToRefine[i]<< "\tIndirizzo "<< meshPointer->Cell(idCellToRefine[i]) << endl;
+#endif
             if(CutTetra(*meshPointer->Cell(idCellToRefine[i])) == Output::Success)
             {
-                cout << "\t\tOperazione di Refining eseguita sul tetra di id " << meshPointer->Cell(idCellToRefine[i])->Id() << endl;
+#ifdef DEBUG
+                cout << "\tOperazione di Refining eseguita sul tetra di id " << meshPointer->Cell(idCellToRefine[i])->Id() << endl;
+#endif
+                meshPointer->CleanInactiveTreeNode();
+            }else
+            {
+                cout << "ERROR: Operazione refinig fallita; ID " << idCellToRefine[i] << endl;
+                //meshPointer->CleanInactiveTreeNode();
             }
         }
         return Output::Success;
