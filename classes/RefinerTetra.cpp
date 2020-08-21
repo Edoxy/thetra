@@ -110,7 +110,7 @@ namespace GeDiM
 #ifdef DEBUG
             cout << "indice\t" << i << "\tIndirizzo\t" << long_edge.Cell(i) << endl;
 #endif
-            if(&current_cell != 0 && current_cell.IsActive())
+            if(current_cell.IsActive())
             {
 #ifdef DEBUG
                 cout << "Nuova cella da rifinire\tID\t" << current_cell.Id() << endl;
