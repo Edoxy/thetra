@@ -1,8 +1,9 @@
 #include "RefinerTetra.hpp"
 #include "Output.hpp"
 #include "Cutter3D.hpp"
-//#define DEBUG
-
+#define DEBUG 0 //0: None; 1: few; 2:All check; 3: Vector prints
+#define ASP_TOLL 3.9
+#define DIM_TOLL 0.4
 using namespace MainApplication;
 
 namespace GeDiM
@@ -66,9 +67,6 @@ namespace GeDiM
                 MaxEdge->AddChild(new_edge);
                 meshPointer->AddEdge(new_edge);
             }
-#ifdef DEBUG
-            EdgesCheck();
-#endif
             unsigned int pos_middle = meshPointer->NumberOfPoints()-1;
             RecoverConformity(*MaxEdge, *meshPointer->Point(pos_middle));
 
@@ -107,17 +105,14 @@ namespace GeDiM
             vector <GenericCell*> cells;
 
             const GenericCell& current_cell = *long_edge.Cell(i);
-#ifdef DEBUG
-            cout << "indice\t" << i << "\tIndirizzo\t" << long_edge.Cell(i) << endl;
-#endif
             if(current_cell.IsActive())
             {
-#ifdef DEBUG
+#if DEBUG > 0
                 cout << "Nuova cella da rifinire\tID\t" << current_cell.Id() << endl;
 #endif
                 if(CellIntegrityCheck(current_cell.Id()) == Output::Success)
                 {
-#ifdef DEBUG
+#if DEBUG > 1
                     cout<<"Cell Integrity correct\n";
 #endif
                 }else
@@ -136,7 +131,7 @@ namespace GeDiM
                         if(!current_face.HasChilds())
                         {
                             counter++;
-#ifdef DEBUG
+#if DEBUG > 1
                             cout << "\tFaccia di id " << current_face.Id() << " da tagliare numero " << counter << "\n";
 #endif
                             unsigned int pos_faces = faces.size();  //INDICE POSIZIONE NEL VETTORE faces DELLA FACCIA CHE STIAMO TAGLIANDO
@@ -248,7 +243,7 @@ namespace GeDiM
                         {
                             counter++;
                             //AGGIUNTA FACCIA SE GIA' TAGLIATA
-#ifdef DEBUG
+#if DEBUG > 1
                             cout << "\tFaccia di id " << current_face.Id() << " gia' tagliata numero " << counter << "\n" << endl;
 #endif
                             unsigned int pos_faces = faces.size();//indice posizione vettore faces
@@ -369,15 +364,15 @@ namespace GeDiM
                 new_faces[4]->AddEdge(edges[4]);
                 meshPointer->AddFace(new_faces[4]);
 
-#ifdef DEBUG
-                
+#if DEBUG > 2
+
                 cout << "Tabella Nomi \n";
                 cout << points[0]->Id() << "\t" << new_edges[0]->Id() << "\t" << new_faces[0]->Id() << "\t" << edges[0]->Id() << "\t" << faces[0]->Id() << "\n";
                 cout << points[1]->Id() << "\t" << new_edges[1]->Id() << "\t" << new_faces[1]->Id() << "\t" << edges[1]->Id() << "\t" << faces[1]->Id() << "\n";
                 cout << "\t\t"<< new_faces[2]->Id() << "\t" << edges[2]->Id() << "\t" << faces[2]->Id() << "\n";
                 cout << "\t\t"<< new_faces[3]->Id() << "\t" << edges[3]->Id() << "\t" << faces[3]->Id() << "\n";
                 cout << "\t\t"<< new_faces[4]->Id() << "\t" << edges[4]->Id() << "\t" <<"\n";
-                
+
 #endif
                 //CREAZIONE NUOVE CELLE
                 for(int j=0; j<2; j++)
@@ -474,7 +469,7 @@ namespace GeDiM
                 unsigned int id_1 = cells[1]->Id();
                 if(CellIntegrityCheck(id_0) == Output::Success)
                 {
-#ifdef DEBUG
+#if DEBUG > 1
                     cout<<"Cell integrity ID "<< id_0 << " correct\n";
 #endif
                 }else
@@ -484,7 +479,7 @@ namespace GeDiM
 
                 if(CellIntegrityCheck(id_1) == Output::Success)
                 {
-#ifdef DEBUG
+#if DEBUG > 1
                     cout<<"Cell integrity ID "<< id_1 << " correct\n";
 #endif
                 }else
@@ -499,29 +494,39 @@ namespace GeDiM
 
     const Output::ExitCodes RefinerTetra::RefineMesh()
     {
-        
-#ifdef DEBUG
+
+#if DEBUG > 2
         cout << idCellToRefine << endl;
 #endif
         for(int i = 0; i < idCellToRefine.size(); i++)
         {
-#ifdef DEBUG
+#if DEBUG > 2
             EdgesCheck();
+#endif
+
             for(int j=0; j < meshPointer->NumberOfCells();j++)
             {
+#if DEBUG > 1
                 if(CellIntegrityCheck(j) == Output::Success)
-                    cout<<"CELL integrity ID "<< j << " correct\t" << meshPointer->Cell(j) << endl;
+                    cout<<"CELL integrity ID "<< j << " correct\t" << meshPointer->Cell(j);
                 else
                 {
                     cout << "CHECK ERROR: Cell Integrity; ID " << j << endl;
                 }
-                
+                cout << "\tIndice AspectRatio " << CellQuality(j) << endl;
+#endif
+                if(CellQuality(j) > ASP_TOLL)
+                {
+                    //cout << "QUALITY CUT\n";
+                    CutTetra(*meshPointer->Cell(j));
+                }
             }
+#if DEBUG > 1
             cout << "Inizio Refining cella id " << idCellToRefine[i]<< "\tIndirizzo "<< meshPointer->Cell(idCellToRefine[i]) << endl;
 #endif
             if(CutTetra(*meshPointer->Cell(idCellToRefine[i])) == Output::Success)
             {
-#ifdef DEBUG
+#if DEBUG > 0
                 cout << "\tOperazione di Refining eseguita sul tetra di id " << meshPointer->Cell(idCellToRefine[i])->Id() << endl;
 #endif
                 //meshPointer->CleanInactiveTreeNode();
@@ -661,11 +666,68 @@ namespace GeDiM
                 {
                     cout << "NULL" <<"\t";
                 }
-                
+
                 cout << meshPointer->Edge(i)->Cell(j) << "\t";
             }
             cout << endl << endl;
         }
         cout << "END OF EDGE CHECK"<< endl;
+    }
+
+    long double RefinerTetra::CellQuality(const unsigned int cell_id)
+    {
+        const GenericCell& cell = *meshPointer->Cell(cell_id);
+        const long double sqrt6 = 2.44948974;
+        vector <Vector3d> alpha;
+        vector <long double> N_norm;
+        alpha.reserve(3);
+        N_norm.reserve(4);
+        for(int i = 0; i<6; i++)
+        {
+            if(cell.Edge(i)->Point(0) == cell.Point(0))
+            {
+                alpha.push_back(cell.Edge(i)->Point(1)->Coordinates() - cell.Edge(i)->Point(0)->Coordinates());
+            }else if(cell.Edge(i)->Point(1) == cell.Point(0))
+            {
+                alpha.push_back(cell.Edge(i)->Point(0)->Coordinates() - cell.Edge(i)->Point(1)->Coordinates());
+            }
+        }
+        for(int i = 0; i<4 ;i ++)
+        {
+            vector <Vector3d> face;
+            face.reserve(2);
+            for(int j = 0; j<3; j++)
+            {
+                if(cell.Face(i)->Edge(j)->Point(0) == cell.Face(i)->Point(0))
+                {
+                    face.push_back(cell.Face(i)->Edge(j)->Point(1)->Coordinates() -cell.Face(i)->Edge(j)->Point(0)->Coordinates());
+                }else if(cell.Face(i)->Edge(j)->Point(1) == cell.Face(i)->Point(0))
+                {
+                    face.push_back(cell.Face(i)->Edge(j)->Point(0)->Coordinates() -cell.Face(i)->Edge(j)->Point(1)->Coordinates());
+                }
+            }
+            N_norm.push_back(face[0].cross(face[1]).norm());
+        }
+        long double a = alpha[0].dot(alpha[1].cross(alpha[2]));
+        const GenericEdge* max_edge = FindMaxEdge(*meshPointer->Cell(cell_id));
+        long double h = (max_edge->Point(1)->Coordinates() -max_edge->Point(0)->Coordinates()).norm();
+        if(h < DIM_TOLL)
+        {
+            return ASP_TOLL;
+        }
+        long double r = a/(N_norm[0] + N_norm[1] +N_norm[2] +N_norm[3]);
+#if DEBUG > 2
+        cout << "CHECK VECTOR ASPECT-RATIO\n" << "Alpha\t" << alpha <<endl;
+        cout<<"N_norm\t" << N_norm<<endl;
+        cout<<a<<endl<<h<<endl<<r<<endl<<"CHECK END...\n";
+#endif
+        double q =h/(2*sqrt6*r);
+        if(q > 0)
+        {
+            return q;
+        }else
+        {
+            return -q;
+        }
     }
 }

@@ -33,6 +33,7 @@ namespace GeDiM
             const Output::ExitCodes RefineMesh();
             const Output::ExitCodes CellIntegrityCheck(const unsigned int& cell_id);
             const Output::ExitCodes EdgesCheck();
+            long double CellQuality(const unsigned int cell_id);
     };
 }
 
