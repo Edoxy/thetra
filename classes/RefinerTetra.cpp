@@ -2,7 +2,7 @@
 #include "Output.hpp"
 #include "Cutter3D.hpp"
 #define DEBUG 0 //0: None; 1: few; 2:All check; 3: Vector prints
-#define ASP_TOLL 3.9
+#define ASP_TOLL 4
 #define DIM_TOLL 0.4
 using namespace MainApplication;
 
@@ -12,10 +12,12 @@ namespace GeDiM
     {
 
     }
+
     RefinerTetra::~RefinerTetra()
     {
 
     }
+
     const Output::ExitCodes RefinerTetra::AddIdCell(const unsigned int& idCell)
 	{
 		idCellToRefine.push_back(idCell);
@@ -76,6 +78,7 @@ namespace GeDiM
 
     const Output::ExitCodes RefinerTetra::RecoverConformity(const GenericEdge& long_edge, const GenericPoint& middlePoint)
     {
+        vector <unsigned int> bad_cell;
         //TROVO a, b
         GenericEdge* a;
         GenericEdge* b;
@@ -486,7 +489,19 @@ namespace GeDiM
                 {
                     cout<<"ERROR: Cell ID " << id_1 << " NOT CORRECT\n";
                 }
+                if(CellQuality(id_0) > ASP_TOLL)
+                {
+                    bad_cell.push_back(id_0);
+                }
+                if(CellQuality(id_1) > ASP_TOLL)
+                {
+                    bad_cell.push_back(id_1);
+                }
             }
+        }
+        for(int i = 0; i< bad_cell.size(); i++)
+        {
+            CutTetra(*meshPointer->Cell(bad_cell[i]));
         }
         return Output::Success;
 
@@ -503,10 +518,9 @@ namespace GeDiM
 #if DEBUG > 2
             EdgesCheck();
 #endif
-
+#if DEBUG > 1
             for(int j=0; j < meshPointer->NumberOfCells();j++)
             {
-#if DEBUG > 1
                 if(CellIntegrityCheck(j) == Output::Success)
                     cout<<"CELL integrity ID "<< j << " correct\t" << meshPointer->Cell(j);
                 else
@@ -514,13 +528,8 @@ namespace GeDiM
                     cout << "CHECK ERROR: Cell Integrity; ID " << j << endl;
                 }
                 cout << "\tIndice AspectRatio " << CellQuality(j) << endl;
-#endif
-                if(CellQuality(j) > ASP_TOLL)
-                {
-                    //cout << "QUALITY CUT\n";
-                    CutTetra(*meshPointer->Cell(j));
-                }
             }
+#endif            
 #if DEBUG > 1
             cout << "Inizio Refining cella id " << idCellToRefine[i]<< "\tIndirizzo "<< meshPointer->Cell(idCellToRefine[i]) << endl;
 #endif
