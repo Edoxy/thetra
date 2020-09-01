@@ -16,12 +16,12 @@ namespace GeDiM
             vector<unsigned int> idCellToRefine;
             list<unsigned int> idFacesCut;
 
-            const Output::ExitCodes FindMaxFace(GenericCell& cell) {}
-            const Output::ExitCodes CutTetra(GenericCell& cell);
+            const Output::ExitCodes Cutter(GenericCell& cell);
             const Output::ExitCodes RecoverConformity(const GenericEdge& long_edge, const GenericPoint&);
             const GenericEdge* FindMaxEdge(GenericCell& cell);
-            CutterMesh3D cutter;
-
+            const Output::ExitCodes CellIntegrityCheck(const unsigned int& cell_id);
+            const Output::ExitCodes EdgesCheck();
+            long double CellQuality(const unsigned int cell_id);
 
         public:
             RefinerTetra();
@@ -31,9 +31,6 @@ namespace GeDiM
             const Output::ExitCodes InitializeIdCells(const unsigned int& numberOfCells) { idCellToRefine.reserve(numberOfCells); return Output::Success;}
             const Output::ExitCodes	AddIdCell(const unsigned int& idCell);
             const Output::ExitCodes RefineMesh();
-            const Output::ExitCodes CellIntegrityCheck(const unsigned int& cell_id);
-            const Output::ExitCodes EdgesCheck();
-            long double CellQuality(const unsigned int cell_id);
     };
 }
 

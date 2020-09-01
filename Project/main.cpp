@@ -32,21 +32,9 @@ int main(int argc, char** argv)
 	RefinerTetra refiner;
 	refiner.SetMesh(mesh);
 	refiner.InitializeIdCells(numCellToRefiner);
-	//int v[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
 	for(unsigned int numCell = 0; numCell < numCellToRefiner; numCell++)
         refiner.AddIdCell(numCell);
     refiner.RefineMesh();
-    ///CONTROLLO DELLA MESH
-    //cout << mesh.CheckDoubleCells();
-    //cout << mesh.CheckDoubleEdges();
-    //mesh.CheckDoubleFaces();
-    //cout << mesh.CheckDoublePoints();
-    //cout << mesh.CheckEdgesInFaces();
-    //cout << mesh.CheckNeigs();
-    //cout << mesh.CheckPointsEqualsEdgesInCells2D();
-    //cout << mesh.CheckPointsEqualsEdgesInFaces();
-    //cout << mesh.CheckPointsInCells();
-    //cout << mesh.CheckPointsInFaces();
 	/// OUTPUT MESH TO MATLAB SCRIPT FOR VISUALIZATION
 
 	mesh.CleanInactiveTreeNode();
