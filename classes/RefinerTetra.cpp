@@ -1,7 +1,7 @@
 #include "RefinerTetra.hpp"
 #include "Output.hpp"
 #include "Cutter3D.hpp"
-#define DEBUG 0 //0: None; 1: few; 2:All check; 3: Vector prints
+#define DEBUG 3 //0: None; 1: few; 2:All check; 3: Vector prints
 #define ASP_TOLL 4
 #define DIM_TOLL 0.4
 using namespace MainApplication;
@@ -123,11 +123,11 @@ namespace GeDiM
                     cout<<"ERROR: Cell ID "<< current_cell.Id() << " NOT CORRECT\n";
                 }
                 unsigned int counter = 0;//controlla il numero di facce verificate(devono essere due)
-                //CICLO NELLE FACCIE VICINE AL LATO TAGLIATO
+                //CICLO NELLE FACCE VICINE AL LATO TAGLIATO
                 for(int j = 0; j < 4; j++)
                 {
                     const GenericFace& current_face = *current_cell.Face(j);
-                    //CICLO NELLE FACCIE DEL TETRAEDRO CORRENTE
+                    //CICLO NELLE FACCE DEL TETRAEDRO CORRENTE
                     if(current_face.Edge(0) == &long_edge || current_face.Edge(1) == &long_edge || current_face.Edge(2) == &long_edge)
                     {
                         //CONTROLLO FACCIA SE GIA' TAGLIATA E SE E' UNA DELLE DUE CHE CI INTERESSANO
@@ -155,7 +155,7 @@ namespace GeDiM
                             new_edges[pos_new_edge]->AddPoint(points[pos_point]);
                             meshPointer->AddEdge(new_edges[pos_new_edge]);
 
-                            //CREAZIONE DELLE DUE NUOVE FACCIE
+                            //CREAZIONE DELLE DUE NUOVE FACCE
                             unsigned int pos_new_faces = new_faces.size(); //INDICE POSIZIONE NEL VETTORE new_faces DELLA PRIMA DELLE FACCE CREATE
                             new_faces.push_back(meshPointer->CreateFace());
                             meshPointer->AddFace(new_faces[pos_new_faces]);
@@ -340,7 +340,7 @@ namespace GeDiM
                         }
                     }
                 }
-                //RICERCA DELLE FACCIE C e F
+                //RICERCA DELLE FACCE C e F
                 for(int j = 0; j < 4; j++)
                 {
                     faces.resize(4);
@@ -529,7 +529,7 @@ namespace GeDiM
                 }
                 cout << "\tIndice AspectRatio " << CellQuality(j) << endl;
             }
-#endif            
+#endif
 #if DEBUG > 1
             cout << "Inizio Refining cella id " << idCellToRefine[i]<< "\tIndirizzo "<< meshPointer->Cell(idCellToRefine[i]) << endl;
 #endif
@@ -593,7 +593,7 @@ namespace GeDiM
                 }
             }
         }
-        ///CONTROLLO FACCIE
+        ///CONTROLLO FACCE
         if(cell.NumberOfFaces() != 4)
             {cout<<"Error: Number of faces is not 4\n"; return Output::GenericError;}
         for(int i=0; i<4; i++)
@@ -622,7 +622,7 @@ namespace GeDiM
                 cout<<"Error: face with double edges\n";
                 return Output::GenericError;
             }
-            //CONTROLLO CHE LE FACCIE TRA LORO ABBIANO UN SOLO LATO IN COMUNE
+            //CONTROLLO CHE LE FACCE TRA LORO ABBIANO UN SOLO LATO IN COMUNE
             if(i < 3)
             {
                 for(int j=i+1; j<4; j++)
