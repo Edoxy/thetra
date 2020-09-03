@@ -1,6 +1,5 @@
 #include "RefinerTetra.hpp"
 #include "Output.hpp"
-#include "Cutter3D.hpp"
 #define DEBUG 0 //0: None; 1: few; 2:All check; 3: Vector prints
 #define ASP_TOLL 4
 #define DIM_TOLL 0.4
@@ -54,10 +53,9 @@ namespace GeDiM
             const Vector3d c_point = 0.5 * ( MaxEdge.Point(0) ->Coordinates() + MaxEdge.Point(1) ->Coordinates());
 
             //CREAZIONE DEL PUNTO MEDIO
-            const vector<Vector3d> x = {c_point};
-            GenericPoint* middle = meshPointer->CreatePoint();
-            middle->SetCoordinates(c_point);
-            meshPointer->AddPoint(middle);
+            GenericPoint& middlePoint = *meshPointer->CreatePoint();
+            middlePoint.SetCoordinates(c_point);
+            meshPointer->AddPoint(&middlePoint);
 
             //CREAZIONE FIGLI
             vector <GenericEdge*> a_b;
@@ -67,12 +65,10 @@ namespace GeDiM
                 a_b.push_back(meshPointer->CreateEdge());
                 a_b[i]->SetFather(&MaxEdge);
                 a_b[i]->AddPoint(MaxEdge.Point(i));
-                a_b[i]->AddPoint(middle);
+                a_b[i]->AddPoint(&middlePoint);
                 MaxEdge.AddChild(a_b[i]);
                 meshPointer->AddEdge(a_b[i]);
             }
-            unsigned int pos_middle = meshPointer->NumberOfPoints()-1;
-            GenericPoint& middlePoint = *meshPointer->Point(pos_middle);
 
             //INIZIO DEL TAGLIO DEI TETRAEDRI INTORNO A MAXEDGE
             vector <unsigned int> bad_cell;//vettore con gli id delle celle da tagliare per pessima qualità
@@ -193,16 +189,6 @@ namespace GeDiM
                                 //AGGIORNO VICINI c E d
                                 new_edges[pos_new_edge]->AddFace(new_faces[pos_new_faces]);
                                 new_edges[pos_new_edge]->AddFace(new_faces[pos_new_faces +1]);
-
-                                /*//AGGIORNO VICINI E e D
-                                meshPointer->Point(points[pos_point]->Id())->AddFace(new_faces[pos_new_faces]);
-                                meshPointer->Point(points[pos_point]->Id())->AddFace(new_faces[pos_new_faces +1]);
-                                meshPointer->Point(points[pos_point]->Id())->AddEdge(new_edges[pos_new_edge]);
-
-                                //AGGIORNO VICINI MIDDLEPOINT
-                                meshPointer->Point(middlePoint.Id())->AddEdge(new_edges[pos_new_edge]);
-                                meshPointer->Point(middlePoint.Id())->AddFace(new_faces[pos_new_faces]);
-                                meshPointer->Point(middlePoint.Id())->AddFace(new_faces[pos_new_faces +1]);*/
 
                                 //AGGIORNO a E b
                                 for(int x = 0; x < 2; x++)
